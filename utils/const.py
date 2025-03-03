@@ -1,0 +1,1 @@
+extensions = [".py", ".vue", ".js", ".json", ".md"]
