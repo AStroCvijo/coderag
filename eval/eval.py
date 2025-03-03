@@ -10,7 +10,7 @@ def eval(persistent_directory, args):
         files = test["files"]
 
         # Query the vector store
-        retrieved_files = query_vector_store(query, persistent_directory)
+        retrieved_files = query_vector_store(query, persistent_directory, args)
 
         # Calculate the accuracy
         correct_files_count = 0
