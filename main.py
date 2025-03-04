@@ -26,11 +26,11 @@ if __name__ == "__main__":
     clone_repo(repo_url, data_path)
 
     # Persistent directory path
-    persistent_directory = os.path.join("db", f"chroma_{extract_repo_name(repo_url)}")
+    persistent_directory = os.path.join("db", f"chroma_{extract_repo_name(repo_url)}_{args.chunk_size}_{args.chunk_overlap}")
 
     # Create the vector store if it doesn't exist already
     if not os.path.exists(persistent_directory):
-        create_vector_store(data_path, extensions, persistent_directory)
+        create_vector_store(data_path, extensions, persistent_directory, args)
     else:
         print("Vector store already exists.")
 
@@ -40,7 +40,4 @@ if __name__ == "__main__":
 
     # Start UI
     if args.user_interface:
-        start_ui(persistent_directory, args)
-    else:
-        # Should be changed to CLI user interface
         start_ui(persistent_directory, args)

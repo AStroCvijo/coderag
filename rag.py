@@ -3,6 +3,37 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from langchain.schema import Document
 from langchain_chroma import Chroma
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_openai import ChatOpenAI
+
+def expand_query(query):
+    llm = ChatOpenAI(model="gpt-4o-mini", max_tokens=19)
+    prompt = f"Expand the following query to improve document retrieval. Provide only the expanded query, without any extra information:\n\n{query}"
+    expanded_query = llm.invoke(prompt)
+    print(expanded_query.content)
+    return expanded_query.content
+
+def generate_summary(code):
+    llm = ChatOpenAI(model="gpt-4o-mini",
+                     temperature=0.0,
+                     max_tokens=200)
+    
+    # Adding a more specific instruction to ensure structured output
+    prompt = f"""
+    Summarize the following code in a structured and concise manner. 
+    Provide only the summary and avoid any additional explanations. 
+    The summary should focus on the main logic and key functions, if any.
+
+    Code:
+    {code}
+
+    Summary:
+    """
+    
+    summary = llm.invoke(prompt)
+    
+    # Ensuring the output is only the summary content
+    return summary.content.strip()
 
 # Function to recursively get all code files with specified extension in a folder
 def get_code_files(data_path, extensions):
@@ -27,15 +58,16 @@ def load_files_as_documents(data_path, extensions):
 
             with open(file_path, "r", encoding="utf-8") as file:
                 content = file.read()
+                summary = generate_summary(content)
                 metadata = {"source": file_path_relative, "extension": os.path.splitext(file_path)[1]}
-                docs.append(Document(page_content=content, metadata=metadata))
+                docs.append(Document(page_content=summary, metadata=metadata))
         except Exception as e:
             print(f"Error reading {file_path}: {e}")
 
     return docs
 
 # Function for creating the vector store
-def create_vector_store(data_path, extensions, persistent_directory):
+def create_vector_store(data_path, extensions, persistent_directory, args):
     print("Loading files...")
     docs = load_files_as_documents(data_path, extensions)
 
@@ -44,7 +76,7 @@ def create_vector_store(data_path, extensions, persistent_directory):
         return
 
     # Split code into chunks
-    text_splitter = CharacterTextSplitter(chunk_size=2000, chunk_overlap=200)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=args.chunk_size, chunk_overlap=args.chunk_overlap)
     split_docs = text_splitter.split_documents(docs)
 
     print(f"Number of chunks created: {len(split_docs)}")
@@ -69,7 +101,7 @@ def query_vector_store(query, persistent_directory, args):
     db = Chroma(persist_directory=persistent_directory, embedding_function=embeddings)
 
     # Use the 'similarity' search type
-    retriever = db.as_retriever(search_type=args.search_type, search_kwargs={"k": 10})
+    retriever = db.as_retriever(search_type=args.search_type, search_kwargs={"k": 20})
 
     # Retrieve documents
     docs = retriever.invoke(query)
@@ -77,8 +109,11 @@ def query_vector_store(query, persistent_directory, args):
     # Sort the retrieved documents by their relevance score in descending order
     sorted_docs = sorted(docs, key=lambda x: x.metadata.get("score", 0.0), reverse=True)
 
+    # Select only the top 10 documents after sorting
+    top_docs = sorted_docs[:10]
+
     # Extract the unique file names from the documents
-    retrieved_files = list(set([doc.metadata.get("source") for doc in sorted_docs]))
+    retrieved_files = list(set([doc.metadata.get("source") for doc in top_docs]))
 
     return retrieved_files
 

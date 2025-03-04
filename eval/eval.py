@@ -5,40 +5,36 @@ def eval(persistent_directory, args):
     with open("eval/evaluation.json", 'r') as file:
         tests = json.load(file)
 
-    for test in tests:
+    total_recall = 0
+    num_cases = len(tests)
+
+    for i, test in enumerate(tests, start=1):
         query = test["question"]
-        files = test["files"]
+        files = set(test["files"])  # Convert ground truth files to set
 
         # Query the vector store
         retrieved_files = query_vector_store(query, persistent_directory, args)
+        retrieved_files = set(retrieved_files)
 
-        # Calculate the accuracy
-        correct_files_count = 0
-        wrong_files_count = 0
-        for file in retrieved_files:
-            if file in files:
-                correct_files_count += 1
-            else:
-                wrong_files_count += 1
+        # Calculate Recall@10
+        num_relevant = len(retrieved_files & files)
+        recall_at_10 = num_relevant / len(files)
+
+        print(f"Test {i}")
+        print(f"  Recall@10: {recall_at_10:.3f}\n")
 
         if args.verbose:
-            # Print the question, correct answer, your answer (retrieved_files), and the file counts
-            print("=" * 80)
-            print(f"Question:\n{query}")
-            print("-" * 80)
-            print(f"Correct Answer:\n{', '.join(files)}")
-            print(f"Your Answer (Retrieved Files):\n{', '.join(retrieved_files)}")
-            print("-" * 80)
-        
-            # Summary of file counts
-            print(f"Number of Correct Files: {correct_files_count}")
-            print(f"Number of Wrong Files: {wrong_files_count}")
-            print("=" * 80)
-            print("\n")
-        else:
-            # Summary of file counts            
-            print("=" * 80)
-            print(f"Number of Correct Files: {correct_files_count}")
-            print(f"Number of Wrong Files: {wrong_files_count}")
-            print("=" * 80)
-            print("\n")
+            print(f"  Query: {query}")
+            print(f"  Ground Truth Files: {files}")
+            print(f"  Retrieved Top-10 Files: {retrieved_files}")
+            print(f"  Relevant Files Found: {retrieved_files & files}")
+
+        total_recall += recall_at_10
+    
+    # Compute overall Recall@10
+    average_recall_at_10 = total_recall / num_cases if num_cases else 0
+    print(f"Recall@10: {average_recall_at_10:.3f}")
+
+    # Save the final result to a log file
+    with open("eval/eval_results.log", "a") as log_file:
+        log_file.write(f"Chunk size: {args.chunk_size}, Chunk overlap: {args.chunk_overlap}, Recall@10: {average_recall_at_10}\n")
