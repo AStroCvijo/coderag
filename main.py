@@ -9,7 +9,7 @@ from utils.repo import *
 
 from eval.eval import eval
 
-from user_interface.query_ui import start_query_ui
+from user_interface.main_ui import start_ui
 
 # Get the OpenAI API
 if not os.environ.get("OPENAI_API_KEY"):
@@ -38,6 +38,9 @@ if __name__ == "__main__":
     if args.eval:
         eval(persistent_directory, args)
 
-    # Allow the user to query over the databse
-    if args.query:
-        start_query_ui(persistent_directory, args)
+    # Start UI
+    if args.user_interface:
+        start_ui(persistent_directory, args)
+    else:
+        # Should be changed to CLI user interface
+        start_ui(persistent_directory, args)
