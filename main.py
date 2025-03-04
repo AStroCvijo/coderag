@@ -2,9 +2,13 @@ import os
 import getpass
 
 from rag import *
+
 from utils.argparser import arg_parse
 from utils.const import extensions
+from utils.repo import *
+
 from eval.eval import eval
+
 from user_interface.query_ui import start_query_ui
 
 # Get the OpenAI API
@@ -18,11 +22,11 @@ if __name__ == "__main__":
 
     # Clone the GitHub repo
     repo_url = args.repo_url
-    data_path = "data"
+    data_path = os.path.join("data", extract_repo_name(repo_url))
     clone_repo(repo_url, data_path)
 
     # Persistent directory path
-    persistent_directory = os.path.join("db", "chroma_db_code")
+    persistent_directory = os.path.join("db", f"chroma_{extract_repo_name(repo_url)}")
 
     # Create the vector store if it doesn't exist already
     if not os.path.exists(persistent_directory):

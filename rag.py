@@ -1,18 +1,8 @@
 import os
-from git import Repo
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from langchain.schema import Document
 from langchain_chroma import Chroma
-
-# Function for cloning GitHub repo's
-def clone_repo(repo_url, data_path):
-    if not os.path.exists(data_path):
-        print(f"Cloing the repo at {repo_url}...")
-        Repo.clone_from(repo_url, data_path)
-        print(f"Repository cloned to {data_path}.")
-    else:
-        print("Repo already cloned.")
 
 # Function to recursively get all code files with specified extension in a folder
 def get_code_files(data_path, extensions):
