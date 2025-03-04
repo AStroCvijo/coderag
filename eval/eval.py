@@ -29,7 +29,7 @@ def eval(persistent_directory, args):
             print(f"Correct Answer:\n{', '.join(files)}")
             print(f"Your Answer (Retrieved Files):\n{', '.join(retrieved_files)}")
             print("-" * 80)
-                
+        
             # Summary of file counts
             print(f"Number of Correct Files: {correct_files_count}")
             print(f"Number of Wrong Files: {wrong_files_count}")

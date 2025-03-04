@@ -5,6 +5,7 @@ from rag import *
 from utils.argparser import arg_parse
 from utils.const import extensions
 from eval.eval import eval
+from user_interface.query_ui import start_query_ui
 
 # Get the OpenAI API
 if not os.environ.get("OPENAI_API_KEY"):
@@ -35,5 +36,4 @@ if __name__ == "__main__":
 
     # Allow the user to query over the databse
     if args.query:
-        # Implement UI for user query
-        print("Query......")
+        start_query_ui(persistent_directory, args)
