@@ -5,24 +5,34 @@ from langchain.schema import Document
 from langchain_chroma import Chroma
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import ChatOpenAI
+from pathlib import Path
+from langchain.text_splitter import RecursiveCharacterTextSplitter, Language
 
 def expand_query(query):
-    llm = ChatOpenAI(model="gpt-4o-mini", max_tokens=19)
-    prompt = f"Expand the following query to improve document retrieval. Provide only the expanded query, without any extra information:\n\n{query}"
+    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.3, max_tokens=100)
+    prompt = f"""Expand the following query to improve document retrieval while maintaining its original intent.
+    Consider possible synonyms, technical terms, and related concepts.
+    Provide only the expanded query without any additional text.
+
+    Original query: {query}
+    Expanded query:"""
+    
     expanded_query = llm.invoke(prompt)
-    print(expanded_query.content)
-    return expanded_query.content
+    return expanded_query.content.strip('"').strip()
 
 def generate_summary(code):
-    llm = ChatOpenAI(model="gpt-4o-mini",
-                     temperature=0.0,
-                     max_tokens=200)
+    """Generate structured code summary with language-specific context"""
+    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.0, max_tokens=400)
     
-    # Adding a more specific instruction to ensure structured output
     prompt = f"""
-    Summarize the following code in a structured and concise manner. 
-    Provide only the summary and avoid any additional explanations. 
-    The summary should focus on the main logic and key functions, if any.
+    Analyze the following code and create a structured summary containing:
+    1. Key functionality and purpose (1-2 sentences)
+    2. Main classes/functions with brief descriptions
+    3. Important dependencies/imports
+    4. Notable algorithms/patterns
+    5. Key input/output relationships
+
+    Format using bullet points with minimal markdown. Be concise but technically precise.
 
     Code:
     {code}
@@ -31,8 +41,6 @@ def generate_summary(code):
     """
     
     summary = llm.invoke(prompt)
-    
-    # Ensuring the output is only the summary content
     return summary.content.strip()
 
 # Function to recursively get all code files with specified extension in a folder
@@ -48,22 +56,26 @@ def get_code_files(data_path, extensions):
 def load_files_as_documents(data_path, extensions):
     docs = []
     code_files = get_code_files(data_path, extensions)
-
-    print(f"Found {len(code_files)} files with extensions {extensions}")
-
+    
     for file_path in code_files:
-        try:
-            # Remove the 'data/' prefix from the file path for storage
-            file_path_relative = file_path.replace(f"{data_path}/", "")
-
-            with open(file_path, "r", encoding="utf-8") as file:
-                content = file.read()
-                summary = generate_summary(content)
-                metadata = {"source": file_path_relative, "extension": os.path.splitext(file_path)[1]}
-                docs.append(Document(page_content=summary, metadata=metadata))
-        except Exception as e:
-            print(f"Error reading {file_path}: {e}")
-
+        with open(file_path, "r", encoding="utf-8", errors="replace") as f:
+            content = f.read()
+                
+        relative_path = str(Path(file_path).relative_to(data_path))
+        file_extension = Path(file_path).suffix.lower()
+            
+        summary = generate_summary(content)
+        metadata = {
+            "source": relative_path,
+            "extension": file_extension,
+            "language": file_extension
+        }
+            
+        docs.append(Document(
+            page_content=f"SUMMARY: {summary}\n\nCODE SNIPPET: {content[:2000]}...",
+            metadata=metadata
+        ))
+            
     return docs
 
 # Function for creating the vector store
@@ -76,7 +88,9 @@ def create_vector_store(data_path, extensions, persistent_directory, args):
         return
 
     # Split code into chunks
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=args.chunk_size, chunk_overlap=args.chunk_overlap)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=args.chunk_size, 
+                                                   chunk_overlap=args.chunk_overlap,
+                                                   add_start_index=True)
     split_docs = text_splitter.split_documents(docs)
 
     print(f"Number of chunks created: {len(split_docs)}")
@@ -86,16 +100,25 @@ def create_vector_store(data_path, extensions, persistent_directory, args):
         return
 
     # Create embeddings
-    embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+    embeddings = OpenAIEmbeddings(
+        model="text-embedding-3-large",
+        dimensions=1536,
+        show_progress_bar=True
+    )
 
-    # Create the vector store
-    db = Chroma.from_documents(split_docs, embeddings, persist_directory=persistent_directory)
+        # Create the Chroma vector store
+    db = Chroma.from_documents(
+        split_docs,
+        embeddings,
+        persist_directory=persistent_directory,
+        collection_metadata={"hnsw:space": "cosine"}
+    )
     
     print(f"Vector store created at {persistent_directory}")  
 
 def query_vector_store(query, persistent_directory, args):
     # Initialize embeddings
-    embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+    embeddings = OpenAIEmbeddings(model="text-embedding-3-large",dimensions=1536,)
     
     # Load the Chroma database
     db = Chroma(persist_directory=persistent_directory, embedding_function=embeddings)
@@ -116,4 +139,3 @@ def query_vector_store(query, persistent_directory, args):
     retrieved_files = list(set([doc.metadata.get("source") for doc in top_docs]))
 
     return retrieved_files
-

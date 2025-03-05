@@ -54,6 +54,7 @@ def start_ui(persistent_directory, args):
             clear_screen()
             continue
         elif user_input.lower() == "query":
+            # Allow the user to choose which vector store to query
             start_query_ui(persistent_directory, args)
             clear_screen()
             continue
