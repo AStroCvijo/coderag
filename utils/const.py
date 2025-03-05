@@ -1,1 +1,1 @@
-extensions = [".py", ".vue", ".js", ".json", ".md"]
+extensions = [".npmrc", ".nvmdrc", ".md", ".yml", ".CN", '.js', ".json", ".1", ".vue"]

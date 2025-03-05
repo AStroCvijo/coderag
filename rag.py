@@ -9,13 +9,16 @@ from pathlib import Path
 from langchain.text_splitter import RecursiveCharacterTextSplitter, Language
 
 def expand_query(query):
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.3, max_tokens=100)
-    prompt = f"""Expand the following query to improve document retrieval while maintaining its original intent.
-    Consider possible synonyms, technical terms, and related concepts.
-    Provide only the expanded query without any additional text.
+    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.0, max_tokens=100)
+    prompt = f"""Optimize the following query to better suit a 
+    Retrieval-Augmented Generation (RAG) system, where the vector store is
+    constructed from code files that have been summarized by a Large Language Model (LLM). 
+    Ensure the query aligns with the summarized nature of the data, improving retrieval accuracy and relevance.
+
+    Return only the enhanced query and no other text.
 
     Original query: {query}
-    Expanded query:"""
+    """
     
     expanded_query = llm.invoke(prompt)
     return expanded_query.content.strip('"').strip()
@@ -102,7 +105,7 @@ def create_vector_store(data_path, extensions, persistent_directory, args):
     # Create embeddings
     embeddings = OpenAIEmbeddings(
         model="text-embedding-3-large",
-        dimensions=1536,
+        dimensions=3072,
         show_progress_bar=True
     )
 
@@ -118,13 +121,13 @@ def create_vector_store(data_path, extensions, persistent_directory, args):
 
 def query_vector_store(query, persistent_directory, args):
     # Initialize embeddings
-    embeddings = OpenAIEmbeddings(model="text-embedding-3-large",dimensions=1536,)
+    embeddings = OpenAIEmbeddings(model="text-embedding-3-large",dimensions=3072)
     
     # Load the Chroma database
     db = Chroma(persist_directory=persistent_directory, embedding_function=embeddings)
 
     # Use the 'similarity' search type
-    retriever = db.as_retriever(search_type=args.search_type, search_kwargs={"k": 20})
+    retriever = db.as_retriever(search_type=args.search_type, search_kwargs={"k": 30})
 
     # Retrieve documents
     docs = retriever.invoke(query)
