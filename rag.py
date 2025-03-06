@@ -75,6 +75,7 @@ def load_files_as_documents(data_path, extensions):
         }
             
         docs.append(Document(
+            # Potential room for improvement
             page_content=f"SUMMARY: {summary}\n\nCODE SNIPPET: {content[:2000]}...",
             metadata=metadata
         ))

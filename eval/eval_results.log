@@ -1,0 +1,34 @@
+Basic embedding and retrieval
+Chunk size: 1200, Chunk overlap: 100, Recall@10: 0.5941176470588235
+Chunk size: 1100, Chunk overlap: 100, Recall@10: 0.6149509803921569
+Chunk size: 1000, Chunk overlap: 100, Recall@10: 0.6272058823529412
+Chunk size: 900, Chunk overlap: 100, Recall@10: 0.5977941176470588
+Chunk size: 800, Chunk overlap: 100, Recall@10: 0.5879901960784313
+Chunk size: 700, Chunk overlap: 100, Recall@10: 0.6370098039215687
+Chunk size: 600, Chunk overlap: 100, Recall@10: 0.5977941176470588
+Chunk size: 500, Chunk overlap: 100, Recall@10: 0.5879901960784313
+Chunk size: 400, Chunk overlap: 100, Recall@10: 0.6107843137254901
+
+With LLM summaries of code
+Chunk size: 700, Chunk overlap: 100, Recall@10: 0.6757352941176472
+Chunk size: 1000, Chunk overlap: 500, Recall@10: 0.6272058823529412
+Chunk size: 1000, Chunk overlap: 50, Recall@10: 0.640686274509804
+
+With (imrpoved) LLM summaries and bigger embedding model
+Chunk size: 1100, Chunk overlap: 100, Recall@10: 0.695343137254902
+Chunk size: 700, Chunk overlap: 100, Recall@10: 0.7019607843137255
+
+With LLM summaries of code and LLM expanded query - > (worse performance)
+Chunk size: 700, Chunk overlap: 100, Recall@10: 0.6352941176470589
+(when i made the expanded querys shorter it improved the performance but it was still worse then basic querys)
+Chunk size: 700, Chunk overlap: 100, Recall@10: 0.6426470588235295
+
+With (imrpoved) LLM summaries and bigger embedding model and expanded query(worse performance)
+Chunk size: 1100, Chunk overlap: 100, Recall@10: 0.6830882352941177
+
+With (imrpoved) LLM summaries and code snippets, bigger embedding model
+Chunk size: 700, Chunk overlap: 100, Recall@10: 0.7963235294117647
+Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.8093137254901961 BEST
+Chunk size: 1200, Chunk overlap: 200, Recall@30: 0.8639705882352942
+Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.7980392156862746 <- same as above but no code snippets
+Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.6909313725490195 <- same as above but without llm generated summaries
