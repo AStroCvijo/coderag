@@ -7,6 +7,9 @@ from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.spinner import Spinner
 from rich.text import Text
+import validators
+
+from utils.repo import *
 
 from user_interface.query_ui import start_query_ui
 
@@ -27,7 +30,7 @@ def clear_screen():
     print_banner()
 
 # Function to start the UI
-def start_ui(persistent_directory, args):
+def start_ui(args):
     clear_screen()
     
     while(True):
@@ -36,6 +39,19 @@ def start_ui(persistent_directory, args):
         if user_input.lower() in {"exit", "quit"}:
             console.print("\n[bold red]Goodbye![/bold red] 👋")
             break
+        elif user_input.lower() == "index":
+            repo_url = Prompt.ask("[bold blue]Enter HitHub repository URL[/bold blue]")
+            
+            # Validate URL (Prrobably should be moved to clone repo)
+            if not validators.url(repo_url) or "github.com" not in repo_url:
+                console.print("[bold red]Invalid GitHub repository URL![/bold red]")
+                continue
+
+            # Clone the repository
+            data_path = os.path.join("data", extract_repo_name(repo_url))
+            clone_repo(repo_url, data_path)
+
+
         elif user_input.lower() == "list":
             repo_dict = defaultdict(list)        
             
@@ -55,13 +71,49 @@ def start_ui(persistent_directory, args):
             continue
         elif user_input.lower() == "query":
             # Allow the user to choose which vector store to query
-            start_query_ui(persistent_directory, args)
+            chroma_dict = defaultdict(list)
+            
+            for folder in os.listdir('db'):
+                user_path = os.path.join('db', folder)
+                if os.path.isdir(user_path):
+                    chroma_dict[folder] = [file for file in os.listdir(user_path)]
+            
+            # Flatten the list with indices
+            chroma_list = []
+            for user, chromas in chroma_dict.items():
+                for chroma in chromas:
+                    chroma_list.append((user, chroma))
+            
+            if not chroma_list:
+                console.print("[bold red]No vector stores found![/bold red]")
+                return
+
+            # Display indexed options
+            for i, (user, chroma) in enumerate(chroma_list, start=1):
+                console.print(f"[bold cyan]{i}[/bold cyan]: [bold green]{user}[/bold green] → {chroma}")
+
+            # Prompt user for selection
+            try:
+                choice = int(input("\nEnter the number of the vector store you want to query: "))
+                if 1 <= choice <= len(chroma_list):
+                    selected_user, selected_chroma = chroma_list[choice - 1]
+                    console.print(f"\n[bold yellow]You selected:[/bold yellow] {selected_user} → {selected_chroma}")
+                    
+                    # Start querying the chroma
+                    persistent_directory = os.path.join('db', selected_user, selected_chroma)
+                    start_query_ui(persistent_directory, args)
+                else:
+                    console.print("[bold red]Invalid selection![/bold red]")
+            except ValueError:
+                console.print("[bold red]Please enter a valid number![/bold red]")
+            
             clear_screen()
             continue
         elif user_input.lower() == "help":
             console.print("\n[bold cyan]Available Commands:[/bold cyan]")
+            console.print("  [bold yellow]index[/bold yellow] - Index a GitHub repo")
+            console.print("  [bold yellow]query[/bold yellow] - Start querying over the GitHub repo")
             console.print("  [bold yellow]list[/bold yellow]  - Get a list of installed GitHub repos")
-            console.print("  [bold yellow]query[/bold yellow]  - Start querying over the DataBase")
             console.print("  [bold yellow]exit[/bold yellow]  - Quit the assistant")
             console.print("  [bold yellow]clear[/bold yellow] - Clear the terminal screen")
             console.print("  [bold yellow]help[/bold yellow]  - Show available commands\n")

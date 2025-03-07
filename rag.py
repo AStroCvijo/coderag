@@ -1,4 +1,5 @@
 import os
+import ast
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from langchain.schema import Document
@@ -46,6 +47,15 @@ def generate_summary(code):
     summary = llm.invoke(prompt)
     return summary.content.strip()
 
+def extract_code_metadata(code):
+    try:
+        tree = ast.parse(code)
+        functions = [node.name for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)]
+        classes = [node.name for node in ast.walk(tree) if isinstance(node, ast.ClassDef)]
+        return functions, classes
+    except Exception:
+        return [], []
+
 # Function to recursively get all code files with specified extension in a folder
 def get_code_files(data_path, extensions):
     code_files = []
@@ -66,12 +76,15 @@ def load_files_as_documents(data_path, extensions):
                 
         relative_path = str(Path(file_path).relative_to(data_path))
         file_extension = Path(file_path).suffix.lower()
-            
+        functions, classes = extract_code_metadata(content)
         summary = generate_summary(content)
+
         metadata = {
             "source": relative_path,
             "extension": file_extension,
-            "language": file_extension
+            "language": file_extension,
+            "functions": ", ".join(functions) if functions else "None",
+            "classes": ", ".join(classes) if classes else "None",
         }
             
         docs.append(Document(
@@ -137,7 +150,7 @@ def query_vector_store(query, persistent_directory, args):
     sorted_docs = sorted(docs, key=lambda x: x.metadata.get("score", 0.0), reverse=True)
 
     # Select only the top 10 documents after sorting
-    top_docs = sorted_docs[:10]
+    top_docs = sorted_docs[:30]
 
     # Extract the unique file names from the documents
     retrieved_files = list(set([doc.metadata.get("source") for doc in top_docs]))

@@ -39,5 +39,4 @@ if __name__ == "__main__":
         eval(persistent_directory, args)
 
     # Start UI
-    if args.query:
-        start_ui(persistent_directory, args)
+    # if args.query:

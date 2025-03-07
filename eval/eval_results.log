@@ -28,7 +28,13 @@ Chunk size: 1100, Chunk overlap: 100, Recall@10: 0.6830882352941177
 
 With (imrpoved) LLM summaries and code snippets, bigger embedding model
 Chunk size: 700, Chunk overlap: 100, Recall@10: 0.7963235294117647
-Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.8093137254901961 BEST
+Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.8093137254901961
 Chunk size: 1200, Chunk overlap: 200, Recall@30: 0.8639705882352942
 Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.7980392156862746 <- same as above but no code snippets
 Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.6909313725490195 <- same as above but without llm generated summaries
+Chunk size: 1400, Chunk overlap: 200, Recall@10: 0.7769607843137255
+Chunk size: 1300, Chunk overlap: 200, Recall@10: 0.7835784313725491
+
+Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.846078431372549 BEST (functions and classes in metadata)
+Chunk size: 1200, Chunk overlap: 200, Recall@20: 0.8732843137254901
+Chunk size: 1200, Chunk overlap: 200, Recall@30: 0.8933823529411765
