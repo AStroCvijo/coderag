@@ -9,9 +9,10 @@ from rich.spinner import Spinner
 from rich.text import Text
 import validators
 
+from rag import create_vector_store
 from utils.repo import *
-
 from user_interface.query_ui import start_query_ui
+from utils.const import extensions
 
 console = Console()
 
@@ -39,10 +40,11 @@ def start_ui(args):
         if user_input.lower() in {"exit", "quit"}:
             console.print("\n[bold red]Goodbye![/bold red] 👋")
             break
+
         elif user_input.lower() == "index":
+
+            # Prompt the user for the GitHub repo url
             repo_url = Prompt.ask("[bold blue]Enter HitHub repository URL[/bold blue]")
-            
-            # Validate URL (Prrobably should be moved to clone repo)
             if not validators.url(repo_url) or "github.com" not in repo_url:
                 console.print("[bold red]Invalid GitHub repository URL![/bold red]")
                 continue
@@ -51,6 +53,18 @@ def start_ui(args):
             data_path = os.path.join("data", extract_repo_name(repo_url))
             clone_repo(repo_url, data_path)
 
+            # Prompt the user for vector store params
+            chunk_size = int(Prompt.ask("[bold blue]Enter chunk size[/bold blue]"))
+            chunk_overlap = int(Prompt.ask("[bold blue]Enter chunk overlap[/bold blue]"))
+            # to be implemented
+            llm_summary = Prompt.ask("[bold blue]Use LLM summary [Y/n][/bold blue]")
+                
+            # Create the vector store
+            persistent_directory = os.path.join("db", f"chroma_{extract_repo_name(repo_url)}_{chunk_size}_{chunk_overlap}")
+            if not os.path.exists(persistent_directory):
+                create_vector_store(data_path, extensions, persistent_directory, chunk_size, chunk_overlap)
+            else:
+                print("Vector store already exists.")
 
         elif user_input.lower() == "list":
             repo_dict = defaultdict(list)        
@@ -66,6 +80,7 @@ def start_ui(args):
                 file_list = "\n".join([f"• {repo}" for repo in repos])
                 panel_content = Text(file_list, style="bold yellow")
                 console.print(Panel(panel_content, title=f"[bold green]{user}'s Repositories[/bold green]", expand=True))
+
         elif user_input.lower() == "clear":
             clear_screen()
             continue
@@ -109,6 +124,7 @@ def start_ui(args):
             
             clear_screen()
             continue
+
         elif user_input.lower() == "help":
             console.print("\n[bold cyan]Available Commands:[/bold cyan]")
             console.print("  [bold yellow]index[/bold yellow] - Index a GitHub repo")

@@ -96,7 +96,7 @@ def load_files_as_documents(data_path, extensions):
     return docs
 
 # Function for creating the vector store
-def create_vector_store(data_path, extensions, persistent_directory, args):
+def create_vector_store(data_path, extensions, persistent_directory, chunk_size, chunk_overlap):
     print("Loading files...")
     docs = load_files_as_documents(data_path, extensions)
 
@@ -105,8 +105,8 @@ def create_vector_store(data_path, extensions, persistent_directory, args):
         return
 
     # Split code into chunks
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=args.chunk_size, 
-                                                   chunk_overlap=args.chunk_overlap,
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, 
+                                                   chunk_overlap=chunk_overlap,
                                                    add_start_index=True)
     split_docs = text_splitter.split_documents(docs)
 
@@ -123,7 +123,7 @@ def create_vector_store(data_path, extensions, persistent_directory, args):
         show_progress_bar=True
     )
 
-        # Create the Chroma vector store
+    # Create the Chroma vector store
     db = Chroma.from_documents(
         split_docs,
         embeddings,
@@ -150,7 +150,7 @@ def query_vector_store(query, persistent_directory, args):
     sorted_docs = sorted(docs, key=lambda x: x.metadata.get("score", 0.0), reverse=True)
 
     # Select only the top 10 documents after sorting
-    top_docs = sorted_docs[:30]
+    top_docs = sorted_docs[:10]
 
     # Extract the unique file names from the documents
     retrieved_files = list(set([doc.metadata.get("source") for doc in top_docs]))
