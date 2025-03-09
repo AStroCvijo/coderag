@@ -7,31 +7,33 @@ from rich.prompt import Prompt
 from rich.spinner import Spinner
 from rich.text import Text
 from rag import query_vector_store
+from utils.repo import parse_file_path
 
 console = Console()
 
 # Function for displaying the banner
-def print_banner():
+def print_banner(name, repo):
     console.print(
         Panel(
-            "[bold cyan]Welcome to the AI-Powered RAG System![/bold cyan]", 
+            f"[bold green]Querying {name}'s {repo} repository![/bold green]", 
             border_style="cyan"
         )
     )
 
 # Function for clearing the screen
-def clear_screen():
+def clear_screen(persistent_directory):
     os.system('cls' if os.name == 'nt' else 'clear')
-    print_banner()
+    name, repo = parse_file_path(persistent_directory)
+    print_banner(name, repo)
 
 # Function to start the query UI
 def start_query_ui(persistent_directory):
-    clear_screen()
+    clear_screen(persistent_directory)
     while True:
         user_input = Prompt.ask("[bold blue]Enter query[/bold blue]")
 
         if user_input.lower() in {"exit", "quit"}:
-            console.print("\n[bold red]Goodbye![/bold red] 👋")
+            console.print("\n[bold red]Stopping the querying process![/bold red]")
             break
         elif user_input.lower() == "clear":
             clear_screen()

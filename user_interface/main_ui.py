@@ -157,12 +157,14 @@ def start_ui():
                     
                     # Start querying the chroma
                     persistent_directory = os.path.join('db', selected_user, selected_chroma)
-                    start_query_ui(persistent_directory)
+                    try:
+                        start_query_ui(persistent_directory)
+                    except KeyboardInterrupt:
+                        clear_screen()
                 else:
-                    console.print("[bold red]Invalid selection![/bold red]")
+                    console.print("[bold red]Error: Invalid selection.[/bold red]")
             except ValueError:
-                console.print("[bold red]Please enter a valid number![/bold red]")
-            
+                console.print("[bold red]Error: Please enter a valid number.[/bold red]")
             continue
 
         elif user_input.lower() == "help":

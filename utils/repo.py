@@ -15,3 +15,14 @@ def clone_repo(repo_url, data_path):
         print(f"Repository cloned to {data_path}.")
     else:
         print("Repo already cloned.")
+
+def parse_file_path(file_path):
+    pattern = r'chroma_([^/]+)/([^/]+)_\d{4}_\d{3}$'
+
+    match = re.search(pattern, file_path)
+    if match:
+        github_user = match.group(1)
+        repo_name = match.group(2)
+        return github_user, repo_name
+    else:
+        raise ValueError("File path does not match the expected format")
