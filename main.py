@@ -1,5 +1,6 @@
 import os
 import getpass
+import sys
 
 from rag import *
 
@@ -20,7 +21,12 @@ if __name__ == "__main__":
     # Parse the arguments
     args = arg_parse()
 
-    # Clone the GitHub repo
+    # Start UI if specified
+    if args.user_interface:
+        start_ui()
+        sys.exit(0)
+
+    # Clone GitHub repo
     repo_url = args.repo_url
     data_path = os.path.join("data", extract_repo_name(repo_url))
     clone_repo(repo_url, data_path)
@@ -30,7 +36,7 @@ if __name__ == "__main__":
     if not os.path.exists(persistent_directory):
         create_vector_store(data_path, extensions, persistent_directory, args.chunk_size, args.chunk_overlap)
     else:
-        print("Vector store already exists.")
+        print("Vector store with those settings already exists.")
 
     # Evaluate on evaluation.json
     if args.eval:

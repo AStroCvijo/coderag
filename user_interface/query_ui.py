@@ -25,7 +25,7 @@ def clear_screen():
     print_banner()
 
 # Function to start the query UI
-def start_query_ui(persistent_directory, args):
+def start_query_ui(persistent_directory):
     clear_screen()
     while True:
         user_input = Prompt.ask("[bold blue]Enter query[/bold blue]")
@@ -45,7 +45,7 @@ def start_query_ui(persistent_directory, args):
         else:
             # Query the vector store
             with console.status("[bold green]Querying vector store...[/bold green]", spinner="dots"):
-                retrieved_files = query_vector_store(user_input, persistent_directory, args)
+                retrieved_files = query_vector_store(user_input, persistent_directory)
                 
                 if retrieved_files:
                     file_list = "\n".join([f"• {file}" for file in retrieved_files])

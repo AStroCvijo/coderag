@@ -13,6 +13,7 @@ from rag import create_vector_store
 from utils.repo import *
 from user_interface.query_ui import start_query_ui
 from utils.const import extensions
+from eval.eval import eval
 
 console = Console()
 
@@ -30,8 +31,16 @@ def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
     print_banner()
 
+def get_input_with_cancel(prompt_text):
+    user_input = Prompt.ask(prompt_text)
+    if user_input.lower() == "cancel":
+        console.print("[bold yellow]Indexing canceled by user.[/bold yellow]")
+        return None
+    return user_input
+
+
 # Function to start the UI
-def start_ui(args):
+def start_ui():
     clear_screen()
     
     while(True):
@@ -42,29 +51,61 @@ def start_ui(args):
             break
 
         elif user_input.lower() == "index":
+            try:
+                # Keep prompting until a valid GitHub URL is entered
+                while True:
+                    repo_url = get_input_with_cancel("[bold blue]Enter GitHub repository URL[/bold blue]")
+                    if repo_url is None:
+                        console.print("[bold yellow]Indexing canceled by user.[/bold yellow]")
+                        return
+                    if validators.url(repo_url) and "github.com" in repo_url:
+                        break
+                    console.print("[bold red]Error: The provided URL is not a valid GitHub repository link.[/bold red]")
 
-            # Prompt the user for the GitHub repo url
-            repo_url = Prompt.ask("[bold blue]Enter HitHub repository URL[/bold blue]")
-            if not validators.url(repo_url) or "github.com" not in repo_url:
-                console.print("[bold red]Invalid GitHub repository URL![/bold red]")
-                continue
+                data_path = os.path.join("data", extract_repo_name(repo_url))
+                clone_repo(repo_url, data_path)
 
-            # Clone the repository
-            data_path = os.path.join("data", extract_repo_name(repo_url))
-            clone_repo(repo_url, data_path)
+                # Keep prompting until a valid chunk size is entered
+                while True:
+                    chunk_size = get_input_with_cancel("[bold blue]Enter chunk size (positive integer)[/bold blue]")
+                    if chunk_size is None:
+                        console.print("[bold yellow]Indexing canceled by user.[/bold yellow]")
+                        return
+                    if chunk_size.isdigit() and int(chunk_size) > 0:
+                        chunk_size = int(chunk_size)
+                        break
+                    console.print("[bold red]Error: Chunk size must be a positive integer.[/bold red]")
 
-            # Prompt the user for vector store params
-            chunk_size = int(Prompt.ask("[bold blue]Enter chunk size[/bold blue]"))
-            chunk_overlap = int(Prompt.ask("[bold blue]Enter chunk overlap[/bold blue]"))
-            # to be implemented
-            llm_summary = Prompt.ask("[bold blue]Use LLM summary [Y/n][/bold blue]")
-                
-            # Create the vector store
-            persistent_directory = os.path.join("db", f"chroma_{extract_repo_name(repo_url)}_{chunk_size}_{chunk_overlap}")
-            if not os.path.exists(persistent_directory):
-                create_vector_store(data_path, extensions, persistent_directory, chunk_size, chunk_overlap)
-            else:
-                print("Vector store already exists.")
+                # Keep prompting until a valid chunk overlap is entered
+                while True:
+                    chunk_overlap = get_input_with_cancel("[bold blue]Enter chunk overlap (non-negative integer)[/bold blue]")
+                    if chunk_overlap is None:
+                        console.print("[bold yellow]Indexing canceled by user.[/bold yellow]")
+                        return
+                    if chunk_overlap.isdigit() and int(chunk_overlap) >= 0:
+                        chunk_overlap = int(chunk_overlap)
+                        break
+                    console.print("[bold red]Error: Chunk overlap must be a non-negative integer.[/bold red]")
+
+                # Keep prompting until a valid LLM summary option is entered
+                while True:
+                    llm_summary = get_input_with_cancel("[bold blue]Use LLM summary? (Y/n):[/bold blue]")
+                    if llm_summary is None:
+                        console.print("[bold yellow]Indexing canceled by user.[/bold yellow]")
+                        return
+                    if llm_summary.lower() in ["y", "n", "yes", "no"]:
+                        break
+                    console.print("[bold red]Error: Please enter 'Y' or 'N' for LLM summary.[/bold red]")
+
+                persistent_directory = os.path.join("db", f"chroma_{extract_repo_name(repo_url)}_{chunk_size}_{chunk_overlap}")
+                if not os.path.exists(persistent_directory):
+                    create_vector_store(data_path, extensions, persistent_directory, chunk_size, chunk_overlap)
+                else:
+                    console.print("[bold yellow]Vector store already exists.[/bold yellow]")
+
+            except KeyboardInterrupt:
+                console.print("\n[bold red]Indexing process interrupted by user.[/bold red]")
+
 
         elif user_input.lower() == "list":
             repo_dict = defaultdict(list)        
@@ -116,13 +157,12 @@ def start_ui(args):
                     
                     # Start querying the chroma
                     persistent_directory = os.path.join('db', selected_user, selected_chroma)
-                    start_query_ui(persistent_directory, args)
+                    start_query_ui(persistent_directory)
                 else:
                     console.print("[bold red]Invalid selection![/bold red]")
             except ValueError:
                 console.print("[bold red]Please enter a valid number![/bold red]")
             
-            clear_screen()
             continue
 
         elif user_input.lower() == "help":

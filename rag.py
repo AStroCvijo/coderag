@@ -133,7 +133,7 @@ def create_vector_store(data_path, extensions, persistent_directory, chunk_size,
     
     print(f"Vector store created at {persistent_directory}")  
 
-def query_vector_store(query, persistent_directory, args):
+def query_vector_store(query, persistent_directory):
     # Initialize embeddings
     embeddings = OpenAIEmbeddings(model="text-embedding-3-large",dimensions=3072)
     
@@ -141,7 +141,7 @@ def query_vector_store(query, persistent_directory, args):
     db = Chroma(persist_directory=persistent_directory, embedding_function=embeddings)
 
     # Use the 'similarity' search type
-    retriever = db.as_retriever(search_type=args.search_type, search_kwargs={"k": 30})
+    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 30})
 
     # Retrieve documents
     docs = retriever.invoke(query)
