@@ -9,17 +9,6 @@ from langchain_openai import ChatOpenAI
 from pathlib import Path
 from langchain.text_splitter import RecursiveCharacterTextSplitter, Language
 
-import os
-import ast
-import nltk
-from pathlib import Path
-from langchain.schema import Document
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
-from langchain_chroma import Chroma
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from rank_bm25 import BM25Okapi
-from nltk.tokenize import word_tokenize
-
 def expand_query(query):
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.0, max_tokens=100)
     prompt = f"""Optimize the following query to better suit a 
