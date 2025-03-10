@@ -1,11 +1,10 @@
 import os
-import sys
-import readline
-from rich.console import Console
+from rich.text import Text
 from rich.panel import Panel
 from rich.prompt import Prompt
+from rich.console import Console
 from rich.spinner import Spinner
-from rich.text import Text
+
 from rag import query_vector_store
 from utils.repo import parse_file_path
 
@@ -30,20 +29,28 @@ def clear_screen(persistent_directory):
 def start_query_ui(persistent_directory):
     clear_screen(persistent_directory)
     while True:
+        # Get user input
         user_input = Prompt.ask("[bold blue]Enter query[/bold blue]")
 
+        # Exit/Quit command
         if user_input.lower() in {"exit", "quit"}:
             console.print("\n[bold red]Stopping the querying process![/bold red]")
             break
+
+        # Clear command
         elif user_input.lower() == "clear":
             clear_screen()
             continue
+
+        # Help command
         elif user_input.lower() == "help":
             console.print("\n[bold cyan]Available Commands:[/bold cyan]")
             console.print("  [bold yellow]exit[/bold yellow]  - Quit the assistant")
             console.print("  [bold yellow]clear[/bold yellow] - Clear the terminal screen")
             console.print("  [bold yellow]help[/bold yellow]  - Show available commands\n")
             continue
+
+        # Else query user input
         else:
             # Query the vector store
             with console.status("[bold green]Querying vector store...[/bold green]", spinner="dots"):

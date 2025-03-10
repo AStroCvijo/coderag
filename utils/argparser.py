@@ -4,7 +4,7 @@ import argparse
 def arg_parse():
     parser = argparse.ArgumentParser() 
 
-    parser.add_argument('-m',  '--model',          type=str,            choices=['gpt-4', 'gpt-3.5-turbo'], default='gpt-3.5-turbo') 
+    parser.add_argument('-m',  '--model',          type=str,            choices=['gpt-4', 'gpt-3.5-turbo', 'gpt-4o-mini'], default='gpt-3.5-turbo') 
 
     parser.add_argument('-ru', '--repo_url',       type=str,            default="https://github.com/viarotel-org/escrcpy")
 

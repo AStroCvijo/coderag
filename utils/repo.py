@@ -16,6 +16,7 @@ def clone_repo(repo_url, data_path):
     else:
         print("Repo already cloned.")
 
+# Function for parsing chroma files names
 def parse_file_path(file_path):
     pattern = r'chroma_([^/]+)/([^/]+)_\d{4}_\d{3}$'
 

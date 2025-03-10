@@ -56,3 +56,6 @@ Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.8595588235294117
 Chunk size: 1201, Chunk overlap: 200, Recall@10: 0.6213235294117648
 Chunk size: 1500, Chunk overlap: 200, Recall@10: 0.8568627450980393
 Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.8595588235294117
+Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.8595588235294117
+Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.7700980392156864
+Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.8595588235294117

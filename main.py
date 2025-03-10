@@ -1,15 +1,12 @@
 import os
-import getpass
 import sys
+import getpass
 
 from rag import *
-
-from utils.argparser import arg_parse
-from utils.const import extensions
 from utils.repo import *
-
 from eval.eval import eval
-
+from utils.const import extensions
+from utils.argparser import arg_parse
 from user_interface.main_ui import start_ui
 
 # Get the OpenAI API
