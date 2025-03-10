@@ -100,7 +100,7 @@ def get_code_files(data_path, extensions):
     return code_files
 
 # Function to load files and extract their contents and metadata
-def load_files_as_documents(data_path, extensions):
+def load_files_as_documents(data_path, extensions, llm_summary=False):
     docs = []
     code_files = get_code_files(data_path, extensions)
     
@@ -108,32 +108,41 @@ def load_files_as_documents(data_path, extensions):
         with open(file_path, "r", encoding="utf-8", errors="replace") as f:
             content = f.read()
         
-        # Retriece the metadata
+        # Retrieve the metadata
         relative_path = str(Path(file_path).relative_to(data_path))
         file_extension = Path(file_path).suffix.lower()
         functions, classes = extract_code_metadata(content)
-        summary = generate_summary(content)
 
         metadata = {
             "source": relative_path,
             "extension": file_extension,
-            "functions": ", ".join(functions) if functions else "None",
             "classes": ", ".join(classes) if classes else "None",
+            "functions": ", ".join(functions) if functions else "None",
         }
+
+        if llm_summary :
+            # Generate LLM summary of code
+            summary = generate_summary(content)
         
-        # Append to list of docs
-        docs.append(Document(
-            page_content=f"SUMMARY: {summary}\n\nCODE SNIPPET: {content[:2000]}...",
-            metadata=metadata
-        ))
+            # Append to list of docs
+            docs.append(Document(
+                page_content=f"SUMMARY: {summary}\n\nCODE SNIPPET: {content[:2000]}...",
+                metadata=metadata
+            ))
+        else:
+            # Append to list of docs
+            docs.append(Document(
+                page_content=content,
+                metadata=metadata
+            ))
             
     return docs
 
 # Function for creating the vector store
-def create_vector_store(data_path, extensions, persistent_directory, chunk_size, chunk_overlap):
+def create_vector_store(data_path, extensions, persistent_directory, chunk_size, chunk_overlap, embedding_model, llm_summary):
     # Load all the docs
     print("Loading files... (this may take a while)")
-    docs = load_files_as_documents(data_path, extensions)
+    docs = load_files_as_documents(data_path, extensions, llm_summary)
 
     if not docs:
         print("No documents found. Exiting.")
@@ -153,7 +162,7 @@ def create_vector_store(data_path, extensions, persistent_directory, chunk_size,
 
     # Create embeddings
     embeddings = OpenAIEmbeddings(
-        model="text-embedding-3-large",
+        model=embedding_model,
         dimensions=3072,
         show_progress_bar=True
     )
@@ -168,15 +177,15 @@ def create_vector_store(data_path, extensions, persistent_directory, chunk_size,
     
     print(f"Vector store created at {persistent_directory}")
 
-def query_vector_store(query, persistent_directory):
+def query_vector_store(query, persistent_directory, k, embedding_model):
     # Initialize embeddings
-    embeddings = OpenAIEmbeddings(model="text-embedding-3-large", dimensions=3072)
+    embeddings = OpenAIEmbeddings(model=embedding_model, dimensions=3072)
 
     # Load the Chroma database
     db = Chroma(persist_directory=persistent_directory, embedding_function=embeddings)
 
     # Use the 'similarity' search type
-    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 40})
+    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": k})
 
     # Retrieve top k documents
     docs = retriever.invoke(query)

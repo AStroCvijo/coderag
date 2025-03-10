@@ -39,7 +39,7 @@ def get_input_with_cancel(prompt_text):
     return user_input
 
 # Function to start the UI
-def start_ui():
+def start_ui(args):
     clear_screen()
     
     while(True):
@@ -91,17 +91,22 @@ def start_ui():
 
                 # Keep prompting until a valid LLM summary option is entered
                 while True:
-                    llm_summary = get_input_with_cancel("[bold blue]Use LLM summary? (Y/n):[/bold blue]")
-                    if llm_summary is None:
+                    llm_summary = False
+                    user_input = get_input_with_cancel("[bold blue]Use LLM summary? (Y/n):[/bold blue]")
+                    if user_input is None:
                         console.print("[bold yellow]Indexing canceled by user.[/bold yellow]")
                         return
-                    if llm_summary.lower() in ["y", "n", "yes", "no"]:
+                    if user_input.lower() in ["y", "yes"]:
+                        llm_summary = True
+                        break
+                    if user_input.lower() in ["n", "no"]:
                         break
                     console.print("[bold red]Error: Please enter 'Y' or 'N' for LLM summary.[/bold red]")
 
                 persistent_directory = os.path.join("db", f"chroma_{extract_repo_name(repo_url)}_{chunk_size}_{chunk_overlap}")
                 if not os.path.exists(persistent_directory):
-                    create_vector_store(data_path, extensions, persistent_directory, chunk_size, chunk_overlap)
+                    # Note: allow user to choose the embedding model
+                    create_vector_store(data_path, extensions, persistent_directory, chunk_size, chunk_overlap, "text-embedding-3-large", llm_summary)
                 else:
                     console.print("[bold yellow]Vector store already exists.[/bold yellow]")
 
@@ -163,7 +168,7 @@ def start_ui():
                     # Start querying the chroma
                     persistent_directory = os.path.join('db', selected_user, selected_chroma)
                     try:
-                        start_query_ui(persistent_directory)
+                        start_query_ui(persistent_directory, args)
                     except KeyboardInterrupt:
                         clear_screen()
                 else:

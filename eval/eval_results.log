@@ -1,4 +1,5 @@
-Basic embedding and retrieval
+# Basic embedding and retrieval (without any LLM summaries)
+# The performance varies based on chunk size and overlap. Recall@10 is calculated for each configuration.
 Chunk size: 1200, Chunk overlap: 100, Recall@10: 0.5941176470588235
 Chunk size: 1100, Chunk overlap: 100, Recall@10: 0.6149509803921569
 Chunk size: 1000, Chunk overlap: 100, Recall@10: 0.6272058823529412
@@ -9,33 +10,39 @@ Chunk size: 600, Chunk overlap: 100, Recall@10: 0.5977941176470588
 Chunk size: 500, Chunk overlap: 100, Recall@10: 0.5879901960784313
 Chunk size: 400, Chunk overlap: 100, Recall@10: 0.6107843137254901
 
-With LLM summaries of code
+# With LLM-generated summaries of code
+# Adding LLM summaries boosts the performance, especially for chunk sizes of 700 and 1000.
 Chunk size: 700, Chunk overlap: 100, Recall@10: 0.6757352941176472
 Chunk size: 1000, Chunk overlap: 500, Recall@10: 0.6272058823529412
 Chunk size: 1000, Chunk overlap: 50, Recall@10: 0.640686274509804
 
-With (imrpoved) LLM summaries and bigger embedding model
+# With improved LLM summaries and a bigger embedding model
+# Larger embedding models and improved summaries continue to enhance Recall@10.
 Chunk size: 1100, Chunk overlap: 100, Recall@10: 0.695343137254902
 Chunk size: 700, Chunk overlap: 100, Recall@10: 0.7019607843137255
 
-With LLM summaries of code and LLM expanded query - > (worse performance)
+# With LLM summaries and LLM-expanded queries (worse performance)
+# Expanding the query length results in decreased performance, though shorter queries showed some improvements.
 Chunk size: 700, Chunk overlap: 100, Recall@10: 0.6352941176470589
-(when i made the expanded querys shorter it improved the performance but it was still worse then basic querys)
+(Shorter expanded queries improved the performance but it was still worse than basic queries)
 Chunk size: 700, Chunk overlap: 100, Recall@10: 0.6426470588235295
 
-With (imrpoved) LLM summaries and bigger embedding model and expanded query(worse performance)
+# With improved LLM summaries, bigger embedding models, and expanded queries (worse performance)
+# Combining improved summaries, larger embeddings, and expanded queries continues to lead to a performance drop.
 Chunk size: 1100, Chunk overlap: 100, Recall@10: 0.6830882352941177
 
-With (imrpoved) LLM summaries and code snippets, bigger embedding model
+# With improved LLM summaries, code snippets, and bigger embedding models
+# Introducing code snippets significantly boosts performance, with the highest Recall@10 recorded at 0.8093.
 Chunk size: 700, Chunk overlap: 100, Recall@10: 0.7963235294117647
 Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.8093137254901961
 Chunk size: 1200, Chunk overlap: 200, Recall@30: 0.8639705882352942
-Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.7980392156862746 <- same as above but no code snippets
-Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.6909313725490195 <- same as above but without llm generated summaries
+Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.7980392156862746  # same as above but without code snippets
+Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.6909313725490195  # same as above but without LLM-generated summaries
 Chunk size: 1400, Chunk overlap: 200, Recall@10: 0.7769607843137255
 Chunk size: 1300, Chunk overlap: 200, Recall@10: 0.7835784313725491
 
-Functions and Classes in metadata
+# Functions and classes in metadata
+# Including function and class metadata further improves performance, with Recall@10 reaching up to 0.8461.
 Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.846078431372549
 Chunk size: 1200, Chunk overlap: 200, Recall@20: 0.8732843137254901
 Chunk size: 1200, Chunk overlap: 200, Recall@30: 0.8933823529411765
@@ -47,15 +54,12 @@ Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.846078431372549
 Chunk size: 1200, Chunk overlap: 50, Recall@10: 0.8350490196078431
 Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.846078431372549
 
-Unique files before sorting by relavance
-Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.8595588235294117 BEST
+# Unique files before sorting by relevance
+# The best result is obtained when sorting by relevance after the chunks are processed, with the highest Recall@10 recorded at 0.8596.
+Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.8595588235294117  # BEST
 Chunk size: 1200, Chunk overlap: 200, Recall@30: 0.8933823529411765
-Chunk size: 1200, Chunk overlap: 200, Recall@40: 0.903186274509804
+Chunk size: 1200, Chunk overlap: 200, Recall@40: 0.903186274509804   # Some more resource expensive reranking model could further improve the accuracy
 Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.8068627450980393
-Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.8595588235294117
 Chunk size: 1201, Chunk overlap: 200, Recall@10: 0.6213235294117648
 Chunk size: 1500, Chunk overlap: 200, Recall@10: 0.8568627450980393
-Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.8595588235294117
-Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.8595588235294117
 Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.7700980392156864
-Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.8595588235294117

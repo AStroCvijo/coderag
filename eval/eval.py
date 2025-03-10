@@ -19,7 +19,7 @@ def eval(persistent_directory, args):
         files = set(test["files"])
 
         # Query the vector store
-        retrieved_files = query_vector_store(query, persistent_directory)
+        retrieved_files = query_vector_store(query, persistent_directory, args.top_k, args.embedding_model)
         retrieved_files = set(retrieved_files)
 
         # Calculate Recall@10

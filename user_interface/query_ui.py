@@ -26,7 +26,7 @@ def clear_screen(persistent_directory):
     print_banner(name, repo)
 
 # Function to start the query UI
-def start_query_ui(persistent_directory):
+def start_query_ui(persistent_directory, args):
     clear_screen(persistent_directory)
     while True:
         # Get user input
@@ -54,7 +54,7 @@ def start_query_ui(persistent_directory):
         else:
             # Query the vector store
             with console.status("[bold green]Querying vector store...[/bold green]", spinner="dots"):
-                retrieved_files = query_vector_store(user_input, persistent_directory)
+                retrieved_files = query_vector_store(user_input, persistent_directory, args.k, args.embedding_model)
                 
                 if retrieved_files:
                     file_list = "\n".join([f"• {file}" for file in retrieved_files])

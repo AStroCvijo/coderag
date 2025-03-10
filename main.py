@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     # Start UI if specified
     if args.user_interface:
-        start_ui()
+        start_ui(args)
         sys.exit(0)
 
     # Clone GitHub repo
@@ -31,7 +31,7 @@ if __name__ == "__main__":
     # Create the vector store
     persistent_directory = os.path.join("db", f"chroma_{extract_repo_name(repo_url)}_{args.chunk_size}_{args.chunk_overlap}")
     if not os.path.exists(persistent_directory):
-        create_vector_store(data_path, extensions, persistent_directory, args.chunk_size, args.chunk_overlap)
+        create_vector_store(data_path, extensions, persistent_directory, args.chunk_size, args.chunk_overlap, args.embedding_model, args.llm_summary)
     else:
         print("Vector store with those settings already exists.")
 
