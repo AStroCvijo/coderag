@@ -13,7 +13,7 @@ def eval(persistent_directory, args):
         files = set(test["files"])  # Convert ground truth files to set
 
         # Query the vector store
-        retrieved_files = query_vector_store(query, persistent_directory, args)
+        retrieved_files = query_vector_store(query, persistent_directory)
         retrieved_files = set(retrieved_files)
 
         # Calculate Recall@10

@@ -9,6 +9,31 @@ from langchain_openai import ChatOpenAI
 from pathlib import Path
 from langchain.text_splitter import RecursiveCharacterTextSplitter, Language
 
+extension_to_language = {
+    ".py": "Python",
+    ".js": "JavaScript",
+    ".cpp": "C++",
+    ".java": "Java",
+    ".go": "Go",
+    ".rb": "Ruby",
+    ".php": "PHP",
+    ".html": "HTML",
+    ".css": "CSS",
+    ".ts": "TypeScript",
+    ".swift": "Swift",
+    ".json": "JSON",
+    ".md": "Markdown",
+    ".yml": "YAML",
+    ".vue": "VUE",
+}
+
+def get_language(file_extension):
+    # Return the language from the dictionary or 'Unknown' if the extension is not found
+    language = extension_to_language.get(file_extension, "Unknown")
+    if language == "Unknown":
+        print(f"Warning: Unknown file extension '{file_extension}' encountered.")
+    return language
+
 def expand_query(query):
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.0, max_tokens=100)
     prompt = f"""Optimize the following query to better suit a 
@@ -76,19 +101,19 @@ def load_files_as_documents(data_path, extensions):
                 
         relative_path = str(Path(file_path).relative_to(data_path))
         file_extension = Path(file_path).suffix.lower()
+        language = get_language(file_extension)
         functions, classes = extract_code_metadata(content)
         summary = generate_summary(content)
 
         metadata = {
             "source": relative_path,
             "extension": file_extension,
-            "language": file_extension,
+            "language": language,
             "functions": ", ".join(functions) if functions else "None",
             "classes": ", ".join(classes) if classes else "None",
         }
             
         docs.append(Document(
-            # Potential room for improvement
             page_content=f"SUMMARY: {summary}\n\nCODE SNIPPET: {content[:2000]}...",
             metadata=metadata
         ))
@@ -97,7 +122,7 @@ def load_files_as_documents(data_path, extensions):
 
 # Function for creating the vector store
 def create_vector_store(data_path, extensions, persistent_directory, chunk_size, chunk_overlap):
-    print("Loading files...")
+    print("Loading files... (this may take a while)")
     docs = load_files_as_documents(data_path, extensions)
 
     if not docs:

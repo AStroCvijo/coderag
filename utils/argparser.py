@@ -9,7 +9,6 @@ def arg_parse():
     parser.add_argument('-ru', '--repo_url',       type=str,            default="https://github.com/viarotel-org/escrcpy")
 
     parser.add_argument('-ui', '--user_interface', action="store_true", default=False)
-    parser.add_argument('-q',  '--query',          action="store_true", default=False)
     parser.add_argument('-e',  '--eval',           action="store_true", default=False)
     parser.add_argument('-v',  '--verbose',        action="store_true", default=False)
 

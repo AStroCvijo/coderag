@@ -38,3 +38,6 @@ Chunk size: 1300, Chunk overlap: 200, Recall@10: 0.7835784313725491
 Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.846078431372549 BEST (functions and classes in metadata)
 Chunk size: 1200, Chunk overlap: 200, Recall@20: 0.8732843137254901
 Chunk size: 1200, Chunk overlap: 200, Recall@30: 0.8933823529411765
+Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.846078431372549
+Chunk size: 1400, Chunk overlap: 200, Recall@10: 0.7769607843137255
+Chunk size: 1500, Chunk overlap: 200, Recall@10: 0.8093137254901962
