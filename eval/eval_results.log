@@ -35,9 +35,24 @@ Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.6909313725490195 <- same as a
 Chunk size: 1400, Chunk overlap: 200, Recall@10: 0.7769607843137255
 Chunk size: 1300, Chunk overlap: 200, Recall@10: 0.7835784313725491
 
-Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.846078431372549 BEST (functions and classes in metadata)
+Functions and Classes in metadata
+Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.846078431372549
 Chunk size: 1200, Chunk overlap: 200, Recall@20: 0.8732843137254901
 Chunk size: 1200, Chunk overlap: 200, Recall@30: 0.8933823529411765
 Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.846078431372549
 Chunk size: 1400, Chunk overlap: 200, Recall@10: 0.7769607843137255
 Chunk size: 1500, Chunk overlap: 200, Recall@10: 0.8093137254901962
+Chunk size: 700, Chunk overlap: 100, Recall@10: 0.7963235294117647
+Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.846078431372549
+Chunk size: 1200, Chunk overlap: 50, Recall@10: 0.8350490196078431
+Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.846078431372549
+
+Unique files before sorting by relavance
+Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.8595588235294117 BEST
+Chunk size: 1200, Chunk overlap: 200, Recall@30: 0.8933823529411765
+Chunk size: 1200, Chunk overlap: 200, Recall@40: 0.903186274509804
+Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.8068627450980393
+Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.8595588235294117
+Chunk size: 1201, Chunk overlap: 200, Recall@10: 0.6213235294117648
+Chunk size: 1500, Chunk overlap: 200, Recall@10: 0.8568627450980393
+Chunk size: 1200, Chunk overlap: 200, Recall@10: 0.8595588235294117

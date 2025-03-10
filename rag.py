@@ -9,30 +9,16 @@ from langchain_openai import ChatOpenAI
 from pathlib import Path
 from langchain.text_splitter import RecursiveCharacterTextSplitter, Language
 
-extension_to_language = {
-    ".py": "Python",
-    ".js": "JavaScript",
-    ".cpp": "C++",
-    ".java": "Java",
-    ".go": "Go",
-    ".rb": "Ruby",
-    ".php": "PHP",
-    ".html": "HTML",
-    ".css": "CSS",
-    ".ts": "TypeScript",
-    ".swift": "Swift",
-    ".json": "JSON",
-    ".md": "Markdown",
-    ".yml": "YAML",
-    ".vue": "VUE",
-}
-
-def get_language(file_extension):
-    # Return the language from the dictionary or 'Unknown' if the extension is not found
-    language = extension_to_language.get(file_extension, "Unknown")
-    if language == "Unknown":
-        print(f"Warning: Unknown file extension '{file_extension}' encountered.")
-    return language
+import os
+import ast
+import nltk
+from pathlib import Path
+from langchain.schema import Document
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain_chroma import Chroma
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from rank_bm25 import BM25Okapi
+from nltk.tokenize import word_tokenize
 
 def expand_query(query):
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.0, max_tokens=100)
@@ -101,14 +87,12 @@ def load_files_as_documents(data_path, extensions):
                 
         relative_path = str(Path(file_path).relative_to(data_path))
         file_extension = Path(file_path).suffix.lower()
-        language = get_language(file_extension)
         functions, classes = extract_code_metadata(content)
         summary = generate_summary(content)
 
         metadata = {
             "source": relative_path,
             "extension": file_extension,
-            "language": language,
             "functions": ", ".join(functions) if functions else "None",
             "classes": ", ".join(classes) if classes else "None",
         }
@@ -160,24 +144,27 @@ def create_vector_store(data_path, extensions, persistent_directory, chunk_size,
 
 def query_vector_store(query, persistent_directory):
     # Initialize embeddings
-    embeddings = OpenAIEmbeddings(model="text-embedding-3-large",dimensions=3072)
-    
+    embeddings = OpenAIEmbeddings(model="text-embedding-3-large", dimensions=3072)
+
     # Load the Chroma database
     db = Chroma(persist_directory=persistent_directory, embedding_function=embeddings)
 
     # Use the 'similarity' search type
-    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 30})
+    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 50})
 
     # Retrieve documents
     docs = retriever.invoke(query)
 
-    # Sort the retrieved documents by their relevance score in descending order
-    sorted_docs = sorted(docs, key=lambda x: x.metadata.get("score", 0.0), reverse=True)
+    # Ensure unique documents before sorting
+    unique_docs = {doc.metadata.get("source"): doc for doc in docs}.values()
+
+    # Sort the unique documents by relevance score in descending order
+    sorted_docs = sorted(unique_docs, key=lambda x: x.metadata.get("score", 0.0), reverse=True)
 
     # Select only the top 10 documents after sorting
     top_docs = sorted_docs[:10]
 
     # Extract the unique file names from the documents
-    retrieved_files = list(set([doc.metadata.get("source") for doc in top_docs]))
+    retrieved_files = [doc.metadata.get("source") for doc in top_docs]
 
     return retrieved_files
