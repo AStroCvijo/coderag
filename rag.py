@@ -1,16 +1,18 @@
 import os
 import ast
-from langchain.text_splitter import CharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings
-from langchain.schema import Document
-from langchain_chroma import Chroma
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_openai import ChatOpenAI
 from pathlib import Path
-from langchain.text_splitter import RecursiveCharacterTextSplitter, Language
+from langchain_chroma import Chroma
+from langchain.schema import Document
+from langchain_openai import ChatOpenAI
+from langchain_openai import OpenAIEmbeddings
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 
+# Function for expanding the user query
 def expand_query(query):
+    # Initialize LLM
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.0, max_tokens=100)
+
+    # Initialize prompt template
     prompt = f"""Optimize the following query to better suit a 
     Retrieval-Augmented Generation (RAG) system, where the vector store is
     constructed from code files that have been summarized by a Large Language Model (LLM). 
@@ -21,13 +23,43 @@ def expand_query(query):
     Original query: {query}
     """
     
+    # Return expanded query
     expanded_query = llm.invoke(prompt)
     return expanded_query.content.strip('"').strip()
 
+# Function for reranking with LLM
+def rerank_with_llm(query, documents):
+    # Initialize LLM
+    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.0)
+
+    ranked_docs = []
+    for doc in documents:
+        # Initialize prompt template
+        prompt = f"""
+        Given the query: "{query}"
+        Rank the relevance of the following retrieved document on a scale of 1 to 100:
+        
+        {doc.page_content[:2000]}
+
+        Provide only a numeric score (1-100) with no extra text.
+        """
+        score = llm.invoke(prompt).content.strip()
+        
+        try:
+            doc.metadata["rerank_score"] = float(score)
+            ranked_docs.append(doc)
+        except ValueError:
+            continue
+    
+    # Return sorted docs
+    return sorted(ranked_docs, key=lambda x: x.metadata["rerank_score"], reverse=True)
+
+# Function for generating code summaries
 def generate_summary(code):
-    """Generate structured code summary with language-specific context"""
+    # Initialize LLM
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.0, max_tokens=400)
     
+    # Initialize prompt template
     prompt = f"""
     Analyze the following code and create a structured summary containing:
     1. Key functionality and purpose (1-2 sentences)
@@ -44,9 +76,11 @@ def generate_summary(code):
     Summary:
     """
     
+    # Return code summary
     summary = llm.invoke(prompt)
     return summary.content.strip()
 
+# Function for extracting file metadata
 def extract_code_metadata(code):
     try:
         tree = ast.parse(code)
@@ -73,7 +107,8 @@ def load_files_as_documents(data_path, extensions):
     for file_path in code_files:
         with open(file_path, "r", encoding="utf-8", errors="replace") as f:
             content = f.read()
-                
+        
+        # Retriece the metadata
         relative_path = str(Path(file_path).relative_to(data_path))
         file_extension = Path(file_path).suffix.lower()
         functions, classes = extract_code_metadata(content)
@@ -85,7 +120,8 @@ def load_files_as_documents(data_path, extensions):
             "functions": ", ".join(functions) if functions else "None",
             "classes": ", ".join(classes) if classes else "None",
         }
-            
+        
+        # Append to list of docs
         docs.append(Document(
             page_content=f"SUMMARY: {summary}\n\nCODE SNIPPET: {content[:2000]}...",
             metadata=metadata
@@ -95,6 +131,7 @@ def load_files_as_documents(data_path, extensions):
 
 # Function for creating the vector store
 def create_vector_store(data_path, extensions, persistent_directory, chunk_size, chunk_overlap):
+    # Load all the docs
     print("Loading files... (this may take a while)")
     docs = load_files_as_documents(data_path, extensions)
 
@@ -129,7 +166,7 @@ def create_vector_store(data_path, extensions, persistent_directory, chunk_size,
         collection_metadata={"hnsw:space": "cosine"}
     )
     
-    print(f"Vector store created at {persistent_directory}")  
+    print(f"Vector store created at {persistent_directory}")
 
 def query_vector_store(query, persistent_directory):
     # Initialize embeddings
@@ -139,9 +176,9 @@ def query_vector_store(query, persistent_directory):
     db = Chroma(persist_directory=persistent_directory, embedding_function=embeddings)
 
     # Use the 'similarity' search type
-    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 50})
+    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 40})
 
-    # Retrieve documents
+    # Retrieve top k documents
     docs = retriever.invoke(query)
 
     # Ensure unique documents before sorting
@@ -151,9 +188,10 @@ def query_vector_store(query, persistent_directory):
     sorted_docs = sorted(unique_docs, key=lambda x: x.metadata.get("score", 0.0), reverse=True)
 
     # Select only the top 10 documents after sorting
+    # Note: any reranking system would work here
     top_docs = sorted_docs[:10]
 
-    # Extract the unique file names from the documents
+    # Extract the file names from the documents
     retrieved_files = [doc.metadata.get("source") for doc in top_docs]
 
     return retrieved_files
