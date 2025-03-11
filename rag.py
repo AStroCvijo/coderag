@@ -187,6 +187,8 @@ def query_vector_store(query, persistent_directory, k, embedding_model):
     # Use the 'similarity' search type
     retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": k})
 
+    # If you want to test out basic query expansion
+    # query = expand_query(query)
     # Retrieve top k documents
     docs = retriever.invoke(query)
 
