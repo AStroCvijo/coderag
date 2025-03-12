@@ -6,6 +6,7 @@ from langchain.schema import Document
 from langchain_openai import ChatOpenAI
 from langchain_openai import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from generate import *
 
 # Function for expanding the user query
 def expand_query(query):
@@ -177,6 +178,7 @@ def create_vector_store(data_path, extensions, persistent_directory, chunk_size,
     
     print(f"Vector store created at {persistent_directory}")
 
+# Function for querying the vector store
 def query_vector_store(query, persistent_directory, k, embedding_model):
     # Initialize embeddings
     embeddings = OpenAIEmbeddings(model=embedding_model, dimensions=3072)
@@ -187,8 +189,9 @@ def query_vector_store(query, persistent_directory, k, embedding_model):
     # Use the 'similarity' search type
     retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": k})
 
-    # If you want to test out basic query expansion
+    # Note: If you want to test out basic query expansion
     # query = expand_query(query)
+
     # Retrieve top k documents
     docs = retriever.invoke(query)
 
@@ -206,3 +209,57 @@ def query_vector_store(query, persistent_directory, k, embedding_model):
     retrieved_files = [doc.metadata.get("source") for doc in top_docs]
 
     return retrieved_files
+
+# Function for generating LLM summaries of the retrieved code files
+def query_vector_store_with_llm(query, persistent_directory):
+    embeddings = OpenAIEmbeddings(model="text-embedding-3-large", dimensions=3072)
+
+    # Load the Chroma database
+    db = Chroma(persist_directory=persistent_directory, embedding_function=embeddings)
+
+    # Use the 'similarity' search type
+    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 10})
+
+    # Create a new workflow instance
+    workflow = StateGraph(GraphState)
+
+    # Add nodes to the workflow
+    workflow.add_node("retrieve", lambda state: retrieve(state, retriever))
+    workflow.add_node("grade_documents", grade_documents)
+    workflow.add_node("generate", generate)
+    workflow.add_node("transform_query", transform_query)
+    workflow.add_node("out_of_scope_response", out_of_scope_response)
+
+    # Set the entry point and define the edges
+    workflow.set_entry_point("retrieve")
+    workflow.add_edge("retrieve", "grade_documents")
+    workflow.add_conditional_edges(
+        "grade_documents",
+        decide_to_generate,
+        {
+            "out_of_scope": "out_of_scope_response",
+            "generate": "generate",
+        },
+    )
+    workflow.add_edge("out_of_scope_response", END)
+    workflow.add_edge("transform_query", "retrieve")
+    workflow.add_conditional_edges(
+        "generate",
+        grade_generation_v_documents_and_question,
+        {
+            "not supported": "generate",
+            "useful": END,
+            "not useful": "transform_query",
+        },
+    )
+
+    # Compile the workflow
+    app = workflow.compile()
+
+    # Genrate the answer
+    inputs = {"question": query}
+    for output in app.stream(inputs):
+        for key, value in output.items():
+            final_output = value
+
+    return final_output["generation"]

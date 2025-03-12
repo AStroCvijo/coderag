@@ -13,9 +13,6 @@ from user_interface.main_ui import start_ui
 if not os.environ.get("OPENAI_API_KEY"):
     os.environ["OPENAI_API_KEY"] = getpass.getpass("Enter API key for OpenAI: ")
 
-if not os.environ.get("TAVILY_API_KEY"):
-    os.environ["TAVILY_API_KEY"] = getpass.getpass("Enter API key for Tavily: ")
-
 if __name__ == "__main__":
 
     # Parse the arguments

@@ -6,6 +6,7 @@ from rich.console import Console
 from rich.spinner import Spinner
 
 from rag import query_vector_store
+from rag import query_vector_store_with_llm
 from utils.repo import parse_file_path
 
 console = Console()
@@ -14,7 +15,7 @@ console = Console()
 def print_banner(name, repo):
     console.print(
         Panel(
-            f"[bold green]Querying {name}'s {repo} repository![/bold green]", 
+            f"[bold green]Querying {name}'s {repo} repository![/bold green]([italic yellow]Type HELP for a list of commands[/italic yellow])", 
             border_style="cyan"
         )
     )
@@ -30,7 +31,7 @@ def start_query_ui(persistent_directory, args):
     clear_screen(persistent_directory)
     while True:
         # Get user input
-        user_input = Prompt.ask("[bold blue]Enter query[/bold blue]")
+        user_input = Prompt.ask("\n[bold blue]Enter query[/bold blue]")
 
         # Exit/Quit command
         if user_input.lower() in {"exit", "quit"}:
@@ -39,7 +40,7 @@ def start_query_ui(persistent_directory, args):
 
         # Clear command
         elif user_input.lower() == "clear":
-            clear_screen()
+            clear_screen(persistent_directory)
             continue
 
         # Help command
@@ -47,14 +48,14 @@ def start_query_ui(persistent_directory, args):
             console.print("\n[bold cyan]Available Commands:[/bold cyan]")
             console.print("  [bold yellow]exit[/bold yellow]  - Quit the assistant")
             console.print("  [bold yellow]clear[/bold yellow] - Clear the terminal screen")
-            console.print("  [bold yellow]help[/bold yellow]  - Show available commands\n")
+            console.print("  [bold yellow]help[/bold yellow]  - Show available commands")
             continue
 
         # Else query user input
         else:
             # Query the vector store
             with console.status("[bold green]Querying vector store...[/bold green]", spinner="dots"):
-                retrieved_files = query_vector_store(user_input, persistent_directory, args.k, args.embedding_model)
+                retrieved_files = query_vector_store(user_input, persistent_directory, args.top_k, args.embedding_model)
                 
                 if retrieved_files:
                     file_list = "\n".join([f"• {file}" for file in retrieved_files])
@@ -62,3 +63,7 @@ def start_query_ui(persistent_directory, args):
                     console.print(Panel(panel_content, title="[bold green]Retrieved Files[/bold green]", expand=False))
                 else:
                     console.print("[bold red]No files found.[/bold red]")
+            # Generate an answer
+            with console.status("[bold green]Generating summary...[/bold green]", spinner="dots"):
+                answer = query_vector_store_with_llm(user_input, persistent_directory)
+                console.print(f"[bold yellow]Answer: {answer}[/bold yellow]")

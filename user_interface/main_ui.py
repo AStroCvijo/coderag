@@ -20,7 +20,7 @@ console = Console()
 def print_banner():
     console.print(
         Panel(
-            "[bold cyan]Welcome to the AI-Powered RAG System![/bold cyan]", 
+            "[bold cyan]Welcome to the AI-Powered RAG System![/bold cyan]([italic yellow]Type HELP for a list of commands[/italic yellow])", 
             border_style="cyan"
         )
     )
@@ -44,7 +44,7 @@ def start_ui(args):
     
     while(True):
         # Get user input
-        user_input = Prompt.ask("[bold blue]Enter command[/bold blue]")
+        user_input = Prompt.ask("\n[bold blue]Enter command[/bold blue]")
         
         # Exit/Quit command
         if user_input.lower() in {"exit", "quit"}:
@@ -169,6 +169,7 @@ def start_ui(args):
                     persistent_directory = os.path.join('db', selected_user, selected_chroma)
                     try:
                         start_query_ui(persistent_directory, args)
+                        clear_screen()
                     except KeyboardInterrupt:
                         clear_screen()
                 else:
@@ -185,5 +186,5 @@ def start_ui(args):
             console.print("  [bold yellow]list[/bold yellow]  - Get a list of installed GitHub repos")
             console.print("  [bold yellow]exit[/bold yellow]  - Quit the assistant")
             console.print("  [bold yellow]clear[/bold yellow] - Clear the terminal screen")
-            console.print("  [bold yellow]help[/bold yellow]  - Show available commands\n")
+            console.print("  [bold yellow]help[/bold yellow]  - Show available commands")
             continue
