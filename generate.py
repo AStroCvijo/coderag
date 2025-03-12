@@ -1,3 +1,5 @@
+import os
+import getpass
 from langchain import hub
 from typing import Literal, List
 from langchain_chroma import Chroma
@@ -12,6 +14,10 @@ from langchain_core.output_parsers import StrOutputParser
 # ------------------------------------------------------------------------------------------------------
 # RETRIEVAL GRADER
 # ------------------------------------------------------------------------------------------------------
+
+# Get the OpenAI API
+if not os.environ.get("OPENAI_API_KEY"):
+    os.environ["OPENAI_API_KEY"] = getpass.getpass("Enter API key for OpenAI: ")
 
 class GradeDocuments(BaseModel):
     binary_score: str = Field(
