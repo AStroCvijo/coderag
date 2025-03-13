@@ -4,7 +4,6 @@ from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.console import Console
 from rich.spinner import Spinner
-
 from rag import query_vector_store
 from rag import query_vector_store_with_llm
 from utils.repo import parse_file_path
@@ -60,10 +59,10 @@ def start_query_ui(persistent_directory, args):
                 if retrieved_files:
                     file_list = "\n".join([f"• {file}" for file in retrieved_files])
                     panel_content = Text(file_list, style="bold yellow")
-                    console.print(Panel(panel_content, title="[bold green]Retrieved Files[/bold green]", expand=False))
+                    console.print(Panel(panel_content, title="[bold yellow]Retrieved Files[/bold yellow]", expand=False))
                 else:
                     console.print("[bold red]No files found.[/bold red]")
             # Generate an answer
             with console.status("[bold green]Generating summary...[/bold green]", spinner="dots"):
                 answer = query_vector_store_with_llm(user_input, persistent_directory)
-                console.print(f"[bold yellow]Answer: {answer}[/bold yellow]")
+                console.print(f"[bold magenta]Answer: {answer}[/bold magenta]")
