@@ -99,7 +99,7 @@ To push accuracy even further, I enhanced metadata by including **a list of func
 
 Finally, I found an error in the querying process where files were first sorted by relevance before ensuring uniqueness in the top 10, potentially causing crucial losses. Fixing this boosted accuracy to:
 
--  **Recall@10: 86.0%** (Best achieved performance)
+-  **Recall@10: 85.1%** (Best achieved performance)
 
 -  **Recall@40: 90.3%** (Suggesting a re-ranking system could further improve results)
 
@@ -137,7 +137,7 @@ During the evaluation, I noticed that some files in the dataset were in **Russia
 
 - When queries were translated into Russian, the RAG system was able to retrieve the **exact Russian README file** that it previously missed. However, in these cases, it failed to retrieve the corresponding **English README file**.
 
-- The overall accuracy of translating queries to Russian was **83.3%**, which is slightly worse than the accuracy achieved with English prompts (**86.0%**).
+- The overall accuracy of translating queries to Russian was **83.3%**, which is slightly worse than the accuracy achieved with English prompts (**85.1%**).
 
   
 
@@ -162,7 +162,7 @@ During the evaluation, I noticed that some files in the dataset were in **Russia
 | **Best overall setup (improved summaries + large embedding model)** | 700 | 100 | 70.2 | **Best performance at this stage** |
 | **With additional extensions + code snippets** | 1200 | 200 | 80.9 | Major improvement |
 | **With enhanced metadata (functions & classes)** | 1200 | 200 | 84.6 | Further boost in accuracy |
-| **Final optimized RAG (query fix applied)** | 1200 | 200 | 86.0 | **Best overall performance** |
+| **Final optimized RAG (query fix applied)** | 1200 | 200 | 85.1 | **Best overall performance** |
 | **With LLM-based re-ranker** | 1200 | 200 | 78.0 | Increased inference time and drop in accuracy |
 | **With translated queries (Russian)** | 1200 | 200 | 83.3 | Handles multilingual content but slightly worse accuracy |
 

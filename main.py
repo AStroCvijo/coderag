@@ -4,7 +4,7 @@ from utils.repo import *
 from eval.eval import eval
 from utils.const import extensions
 from utils.argparser import arg_parse
-from user_interface.main_ui import start_ui
+from ui.main_ui import start_ui
 
 if __name__ == "__main__":\
 

@@ -1,12 +1,13 @@
 import os
 import ast
+from generate import *
 from pathlib import Path
 from langchain_chroma import Chroma
 from langchain.schema import Document
 from langchain_openai import ChatOpenAI
 from langchain_openai import OpenAIEmbeddings
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from generate import *
 
 # Function for expanding the user query
 def expand_query(query):
@@ -100,43 +101,53 @@ def get_code_files(data_path, extensions):
                 code_files.append(os.path.join(root, file))
     return code_files
 
-# Function to load files and extract their contents and metadata
-def load_files_as_documents(data_path, extensions, llm_summary=False):
-    docs = []
-    code_files = get_code_files(data_path, extensions)
-    
-    for file_path in code_files:
+# Function to process a single file
+def process_file(file_path, data_path, llm_summary):
+    try:
         with open(file_path, "r", encoding="utf-8", errors="replace") as f:
             content = f.read()
-        
-        # Retrieve the metadata
+
         relative_path = str(Path(file_path).relative_to(data_path))
+        absolute_path = str(Path(file_path).resolve())
         file_extension = Path(file_path).suffix.lower()
         functions, classes = extract_code_metadata(content)
 
         metadata = {
             "source": relative_path,
+            "absolute_path": absolute_path,
             "extension": file_extension,
             "classes": ", ".join(classes) if classes else "None",
             "functions": ", ".join(functions) if functions else "None",
         }
 
-        if llm_summary :
-            # Generate LLM summary of code
+        if llm_summary:
             summary = generate_summary(content)
-        
-            # Append to list of docs
-            docs.append(Document(
-                page_content=f"SUMMARY: {summary}\n\nCODE SNIPPET: {content[:2000]}...",
+            return Document(
+                page_content=f"SUMMARY: {summary}\n\nCODE SNIPPET: {content}...",
                 metadata=metadata
-            ))
+            )
         else:
-            # Append to list of docs
-            docs.append(Document(
+            return Document(
                 page_content=content,
                 metadata=metadata
-            ))
-            
+            )
+    except Exception as e:
+        print(f"Error processing file {file_path}: {e}")
+        return None
+
+# Function to load files and process them in parallel
+def load_files_as_documents(data_path, extensions, llm_summary=False):
+    code_files = get_code_files(data_path, extensions)
+    docs = []
+
+    with ThreadPoolExecutor() as executor:
+        future_to_file = {executor.submit(process_file, file, data_path, llm_summary): file for file in code_files}
+
+        for future in as_completed(future_to_file):
+            doc = future.result()
+            if doc:  # Ignore failed cases
+                docs.append(doc)
+
     return docs
 
 # Function for creating the vector store

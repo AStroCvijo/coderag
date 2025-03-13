@@ -149,6 +149,19 @@ class GraphState(TypedDict):
 def retrieve(state, retriever):
     question = state["question"]
     documents = retriever.invoke(question)
+    
+    for doc in documents:
+        # Get the source path from the document's metadata
+        source_path = doc.metadata.get("absolute_path")
+        
+        # Read the actual content from the source file
+        if source_path:
+            with open(source_path, "r") as file:
+                actual_content = file.read()
+            
+            # Replace the document's page_content with the actual content
+            doc.page_content = actual_content
+    
     return {"documents": documents, "question": question}
 
 def generate(state):
