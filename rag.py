@@ -1,5 +1,6 @@
 import os
 import ast
+from utils.const import OPENAI_MODELS
 from generate import *
 from pathlib import Path
 from langchain_chroma import Chroma
@@ -8,6 +9,9 @@ from langchain_openai import ChatOpenAI
 from langchain_openai import OpenAIEmbeddings
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_openai import OpenAIEmbeddings
+from transformers import AutoModel, AutoTokenizer
+import torch
 
 # Function for expanding the user query
 def expand_query(query):
@@ -172,12 +176,21 @@ def create_vector_store(data_path, extensions, persistent_directory, chunk_size,
         print("No chunks created. Exiting.")
         return
 
-    # Create embeddings
-    embeddings = OpenAIEmbeddings(
-        model=embedding_model,
-        dimensions=3072,
-        show_progress_bar=True
-    )
+    # Check if the model is OpenAI or Hugging Face
+    if embedding_model in OPENAI_MODELS:
+        # Dynamically use the correct dimension for OpenAI models
+        embeddings = OpenAIEmbeddings(model=embedding_model)
+    else:
+        # Load Hugging Face model dynamically
+        tokenizer = AutoTokenizer.from_pretrained(embedding_model)
+        model = AutoModel.from_pretrained(embedding_model)
+
+        # Define the embeddings function for Hugging Face models
+        def embeddings(texts):
+            tokens = tokenizer(texts, return_tensors="pt", padding=True, truncation=True)
+            with torch.no_grad():
+                output = model(**tokens)
+            return output.last_hidden_state.mean(dim=1).tolist()
 
     # Create the Chroma vector store
     db = Chroma.from_documents(
@@ -191,39 +204,62 @@ def create_vector_store(data_path, extensions, persistent_directory, chunk_size,
 
 # Function for querying the vector store
 def query_vector_store(query, persistent_directory, k, embedding_model):
-    # Initialize embeddings
-    embeddings = OpenAIEmbeddings(model=embedding_model, dimensions=3072)
+    # Check if the model is OpenAI or Hugging Face
+    if embedding_model in OPENAI_MODELS:
+        # Dynamically use the correct dimension for OpenAI models
+        embeddings = OpenAIEmbeddings(model=embedding_model)
+    else:
+        # Load Hugging Face model dynamically
+        tokenizer = AutoTokenizer.from_pretrained(embedding_model)
+        model = AutoModel.from_pretrained(embedding_model)
+
+        # Define the embeddings function for Hugging Face models
+        def embeddings(texts):
+            tokens = tokenizer(texts, return_tensors="pt", padding=True, truncation=True)
+            with torch.no_grad():
+                output = model(**tokens)
+            return output.last_hidden_state.mean(dim=1).tolist()
 
     # Load the Chroma database
     db = Chroma(persist_directory=persistent_directory, embedding_function=embeddings)
 
-    # Use the 'similarity' search type
+    # Perform similarity search
     retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": k})
 
-    # Note: If you want to test out basic query expansion
-    # query = expand_query(query)
-
-    # Retrieve top k documents
+    # Retrieve top-k documents
     docs = retriever.invoke(query)
 
     # Ensure unique documents before sorting
     unique_docs = {doc.metadata.get("source"): doc for doc in docs}.values()
 
-    # Sort the unique documents by relevance score in descending order
+    # Sort by relevance score in descending order
     sorted_docs = sorted(unique_docs, key=lambda x: x.metadata.get("score", 0.0), reverse=True)
 
-    # Select only the top 10 documents after sorting
-    # Note: any reranking system would work here
-    top_docs = sorted_docs[:10]
+    # Select only the top 40 documents
+    top_docs = sorted_docs[:40]
 
-    # Extract the file names from the documents
+    # Extract file names
     retrieved_files = [doc.metadata.get("source") for doc in top_docs]
 
     return retrieved_files
 
 # Function for generating LLM summaries of the retrieved code files
-def query_vector_store_with_llm(query, persistent_directory):
-    embeddings = OpenAIEmbeddings(model="text-embedding-3-large", dimensions=3072)
+def query_vector_store_with_llm(query, persistent_directory, embedding_model):
+    # Check if the model is OpenAI or Hugging Face
+    if embedding_model in OPENAI_MODELS:
+        # Dynamically use the correct dimension for OpenAI models
+        embeddings = OpenAIEmbeddings(model=embedding_model)
+    else:
+        # Load Hugging Face model dynamically
+        tokenizer = AutoTokenizer.from_pretrained(embedding_model)
+        model = AutoModel.from_pretrained(embedding_model)
+
+        # Define the embeddings function for Hugging Face models
+        def embeddings(texts):
+            tokens = tokenizer(texts, return_tensors="pt", padding=True, truncation=True)
+            with torch.no_grad():
+                output = model(**tokens)
+            return output.last_hidden_state.mean(dim=1).tolist()
 
     # Load the Chroma database
     db = Chroma(persist_directory=persistent_directory, embedding_function=embeddings)

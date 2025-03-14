@@ -5,7 +5,7 @@ def arg_parse():
     parser = argparse.ArgumentParser() 
 
     # RAG arguments
-    parser.add_argument('-k', '--top_k',           type=int,      default=30)
+    parser.add_argument('-k', '--top_k',           type=int,      default=40)
     parser.add_argument('-cs', '--chunk_size',     type=int,      default=1200)
     parser.add_argument('-co', '--chunk_overlap',  type=int,      default=200)
     parser.add_argument('-ls', '--llm_summary',    type=bool,      default=True)
@@ -14,10 +14,7 @@ def arg_parse():
                     choices=[
                         'text-embedding-3-large',
                         'text-embedding-3-small',
-                        'text-embedding-ada-002', 
-                        'text-embedding-babbage-001', 
-                        'text-embedding-curie-001', 
-                        'text-embedding-davinci-002', 
+                        'text-embedding-ada-002',
                     ], 
                     default='text-embedding-3-large')
 

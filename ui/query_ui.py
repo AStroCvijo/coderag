@@ -22,12 +22,13 @@ def print_banner(name, repo):
 # Function for clearing the screen
 def clear_screen(persistent_directory):
     os.system('cls' if os.name == 'nt' else 'clear')
-    name, repo = parse_file_path(persistent_directory)
+    name, repo, _ = parse_file_path(persistent_directory)
     print_banner(name, repo)
 
 # Function to start the query UI
 def start_query_ui(persistent_directory, args):
     clear_screen(persistent_directory)
+    embedding_model = parse_file_path(persistent_directory)[2]
     while True:
         # Get user input
         user_input = Prompt.ask("\n[bold blue]Enter query[/bold blue]")
@@ -54,7 +55,7 @@ def start_query_ui(persistent_directory, args):
         else:
             # Query the vector store
             with console.status("[bold green]Querying vector store...[/bold green]", spinner="dots"):
-                retrieved_files = query_vector_store(user_input, persistent_directory, args.top_k, args.embedding_model)
+                retrieved_files = query_vector_store(user_input, persistent_directory, args.top_k, embedding_model)
                 
                 if retrieved_files:
                     file_list = "\n".join([f"• {file}" for file in retrieved_files])
@@ -64,5 +65,5 @@ def start_query_ui(persistent_directory, args):
                     console.print("[bold red]No files found.[/bold red]")
             # Generate an answer
             with console.status("[bold green]Generating summary...[/bold green]", spinner="dots"):
-                answer = query_vector_store_with_llm(user_input, persistent_directory)
+                answer = query_vector_store_with_llm(user_input, persistent_directory, embedding_model)
                 console.print(f"[bold magenta]Answer: {answer}[/bold magenta]")

@@ -103,12 +103,12 @@ def start_ui(args):
                         break
                     console.print("[bold red]Error: Please enter 'Y' or 'N' for LLM summary.[/bold red]")
 
-                persistent_directory = os.path.join("db", f"chroma_{extract_repo_name(repo_url)}_{chunk_size}_{chunk_overlap}")
+                persistent_directory = os.path.join("db", f"chroma_{extract_repo_name(repo_url)}_{args.chunk_size}_{args.chunk_overlap}_{args.embedding_model}")
                 if not os.path.exists(persistent_directory):
                     # Note: allow user to choose the embedding model
-                    create_vector_store(data_path, extensions, persistent_directory, chunk_size, chunk_overlap, "text-embedding-3-large", llm_summary)
+                    create_vector_store(data_path, extensions, persistent_directory, chunk_size, chunk_overlap, args.embedding_model, llm_summary)
                 else:
-                    console.print("[bold yellow]Vector store already exists.[/bold yellow]")
+                    console.print("[bold yellow]Vector store with those settings already exists.[/bold yellow]")
 
             except KeyboardInterrupt:
                 console.print("\n[bold red]Indexing process interrupted by user.[/bold red]")
@@ -163,7 +163,6 @@ def start_ui(args):
                 choice = int(input("\nEnter the number of the vector store you want to query: "))
                 if 1 <= choice <= len(chroma_list):
                     selected_user, selected_chroma = chroma_list[choice - 1]
-                    console.print(f"\n[bold yellow]You selected:[/bold yellow] {selected_user} → {selected_chroma}")
                     
                     # Start querying the chroma
                     persistent_directory = os.path.join('db', selected_user, selected_chroma)
