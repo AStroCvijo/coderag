@@ -1,10 +1,11 @@
 import json
 from rag import query_vector_store
 
+
 # Function for evaluating the RAG system
 def eval(persistent_directory, args):
     # Load the json file with evaluation data
-    with open("eval/evaluation.json", 'r') as file:
+    with open("eval/evaluation.json", "r") as file:
         tests = json.load(file)
 
     total_recall = 0
@@ -19,7 +20,9 @@ def eval(persistent_directory, args):
         files = set(test["files"])
 
         # Query the vector store
-        retrieved_files = query_vector_store(query, persistent_directory, args.top_k, args.embedding_model)
+        retrieved_files = query_vector_store(
+            query, persistent_directory, args.top_k, args.embedding_model
+        )
         retrieved_files = set(retrieved_files)
 
         # Calculate Recall@10
@@ -38,7 +41,7 @@ def eval(persistent_directory, args):
             print("-" * 40)
 
         total_recall += recall_at_10
-    
+
     # Compute overall Recall@10
     average_recall_at_10 = total_recall / num_cases if num_cases else 0
     print("\n=== Evaluation Complete ===")
@@ -46,6 +49,9 @@ def eval(persistent_directory, args):
 
     # Save the final result to a log file
     with open("eval/eval_results.log", "a") as log_file:
-        log_file.write(f"Chunk size: {args.chunk_size}, Chunk overlap: {args.chunk_overlap}, Recall@10: {average_recall_at_10}\n")
+        log_file.write(
+            f"Chunk size: {
+                args.chunk_size}, Chunk overlap: {
+                args.chunk_overlap}, Recall@10: {average_recall_at_10}\n")
 
     print("Results saved to 'eval/eval_results.log'\n")

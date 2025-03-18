@@ -17,6 +17,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 # EMBEDDING MODEL DETECTION
 # ------------------------------------------------------------------------------------------------------
 
+
 def get_embeddings_function(embedding_model):
     # Check if the model is OpenAI or Hugging Face
     if embedding_model in OPENAI_MODELS:
@@ -28,20 +29,24 @@ def get_embeddings_function(embedding_model):
 
         # Define the embeddings function for Hugging Face models
         def embeddings(texts):
-            tokens = tokenizer(texts, return_tensors="pt", padding=True, truncation=True)
+            tokens = tokenizer(
+                texts, return_tensors="pt", padding=True, truncation=True
+            )
             with torch.no_grad():
                 output = model(**tokens)
             return output.last_hidden_state.mean(dim=1).tolist()
+
 
 # ------------------------------------------------------------------------------------------------------
 # VECTORSTORE CREATION
 # ------------------------------------------------------------------------------------------------------
 
+
 # Function for generating code summaries
 def generate_summary(code, llm):
     # Initialize LLM
     llm = ChatOpenAI(model=llm, temperature=0.0, max_tokens=400)
-    
+
     # Initialize prompt template
     prompt = f"""
     Analyze the following code and create a structured summary containing:
@@ -58,22 +63,27 @@ def generate_summary(code, llm):
 
     Summary:
     """
-    
+
     # Return code summary
     summary = llm.invoke(prompt)
     return summary.content.strip()
+
 
 # Function for extracting file metadata
 def extract_code_metadata(code):
     try:
         tree = ast.parse(code)
-        functions = [node.name for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)]
-        classes = [node.name for node in ast.walk(tree) if isinstance(node, ast.ClassDef)]
+        functions = [node.name for node in ast.walk(
+            tree) if isinstance(node, ast.FunctionDef)]
+        classes = [node.name for node in ast.walk(
+            tree) if isinstance(node, ast.ClassDef)]
         return functions, classes
     except Exception:
         return [], []
 
-# Function to recursively get all code files with specified extension in a folder
+
+# Function to recursively get all code files with specified extension in a
+# folder
 def get_code_files(data_path, extensions):
     code_files = []
     for root, _, files in os.walk(data_path):
@@ -81,6 +91,7 @@ def get_code_files(data_path, extensions):
             if file.endswith(tuple(extensions)):
                 code_files.append(os.path.join(root, file))
     return code_files
+
 
 # Function to process a single file
 def process_file(file_path, data_path, llm_summary, llm):
@@ -105,16 +116,14 @@ def process_file(file_path, data_path, llm_summary, llm):
             summary = generate_summary(content, llm)
             return Document(
                 page_content=f"SUMMARY: {summary}\n\nCODE SNIPPET: {content[:2000]}...",
-                metadata=metadata
+                metadata=metadata,
             )
         else:
-            return Document(
-                page_content=content,
-                metadata=metadata
-            )
+            return Document(page_content=content, metadata=metadata)
     except Exception as e:
         print(f"Error processing file {file_path}: {e}")
         return None
+
 
 # Function to load files and process them in parallel
 def load_files_as_documents(data_path, extensions, llm, llm_summary=False):
@@ -122,17 +131,33 @@ def load_files_as_documents(data_path, extensions, llm, llm_summary=False):
     docs = []
 
     with ThreadPoolExecutor() as executor:
-        future_to_file = {executor.submit(process_file, file, data_path, llm_summary, llm): file for file in code_files}
+        future_to_file = {
+            executor.submit(process_file, file, data_path, llm_summary, llm): file
+            for file in code_files
+        }
 
-        for future in tqdm(as_completed(future_to_file), total=len(code_files), desc="Processing files"):
+        for future in tqdm(
+                as_completed(future_to_file),
+                total=len(code_files),
+                desc="Processing files"):
             doc = future.result()
             if doc:  # Ignore failed cases
                 docs.append(doc)
 
     return docs
 
+
 # Function for creating the vector store
-def create_vector_store(data_path, extensions, persistent_directory, chunk_size, chunk_overlap, embedding_model, llm_summary, llm):
+def create_vector_store(
+    data_path,
+    extensions,
+    persistent_directory,
+    chunk_size,
+    chunk_overlap,
+    embedding_model,
+    llm_summary,
+    llm,
+):
     # Load all the docs
     print("Loading files... (this may take a while)")
     docs = load_files_as_documents(data_path, extensions, llm, llm_summary)
@@ -142,9 +167,10 @@ def create_vector_store(data_path, extensions, persistent_directory, chunk_size,
         return
 
     # Split code into chunks
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, 
-                                                   chunk_overlap=chunk_overlap,
-                                                   add_start_index=True)
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        add_start_index=True)
     split_docs = text_splitter.split_documents(docs)
 
     print(f"Number of chunks created: {len(split_docs)}")
@@ -161,14 +187,16 @@ def create_vector_store(data_path, extensions, persistent_directory, chunk_size,
         split_docs,
         embeddings,
         persist_directory=persistent_directory,
-        collection_metadata={"hnsw:space": "cosine"}
+        collection_metadata={"hnsw:space": "cosine"},
     )
-    
+
     print(f"Vector store created at {persistent_directory}")
+
 
 # ------------------------------------------------------------------------------------------------------
 # VECTORSTORE QUERY
 # ------------------------------------------------------------------------------------------------------
+
 
 # Function for querying the vector store
 def query_vector_store(query, persistent_directory, k, embedding_model):
@@ -176,10 +204,15 @@ def query_vector_store(query, persistent_directory, k, embedding_model):
     embeddings = get_embeddings_function(embedding_model)
 
     # Load the Chroma database
-    db = Chroma(persist_directory=persistent_directory, embedding_function=embeddings)
+    db = Chroma(
+        persist_directory=persistent_directory,
+        embedding_function=embeddings)
 
     # Perform similarity search
-    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": k})
+    retriever = db.as_retriever(
+        search_type="similarity",
+        search_kwargs={
+            "k": k})
 
     # Retrieve top-k documents
     docs = retriever.invoke(query)
@@ -188,7 +221,9 @@ def query_vector_store(query, persistent_directory, k, embedding_model):
     unique_docs = {doc.metadata.get("source"): doc for doc in docs}.values()
 
     # Sort by relevance score in descending order
-    sorted_docs = sorted(unique_docs, key=lambda x: x.metadata.get("score", 0.0), reverse=True)
+    sorted_docs = sorted(
+        unique_docs, key=lambda x: x.metadata.get("score", 0.0), reverse=True
+    )
 
     # Select only the top 10 documents
     top_docs = sorted_docs[:10]
@@ -198,28 +233,61 @@ def query_vector_store(query, persistent_directory, k, embedding_model):
 
     return retrieved_files
 
+
 # Function for generating LLM summaries of the retrieved code files
-def query_vector_store_with_llm(query, persistent_directory, embedding_model, llm):
+def query_vector_store_with_llm(
+        query,
+        persistent_directory,
+        embedding_model,
+        llm):
     # Get embeddings function based on model type
     embeddings = get_embeddings_function(embedding_model)
 
     # Load the Chroma database
-    db = Chroma(persist_directory=persistent_directory, embedding_function=embeddings)
+    db = Chroma(
+        persist_directory=persistent_directory,
+        embedding_function=embeddings)
 
     # Use the 'similarity' search type
-    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 10})
+    retriever = db.as_retriever(
+        search_type="similarity",
+        search_kwargs={
+            "k": 10})
 
-    retrieval_grader, rag_chain, hallucination_grader, answer_grader, question_rewriter = init_agents(llm)
+    (
+        retrieval_grader,
+        rag_chain,
+        hallucination_grader,
+        answer_grader,
+        question_rewriter,
+    ) = init_agents(llm)
 
     # Create a new workflow instance
     workflow = StateGraph(GraphState)
 
     # Add nodes to the workflow
     workflow.add_node("retrieve", lambda state: retrieve(state, retriever))
-    workflow.add_node("grade_documents", lambda state: grade_documents(state, retrieval_grader))
-    workflow.add_node("generate", lambda state: generate(state, rag_chain, llm))
-    workflow.add_node("transform_query", lambda state: transform_query(state, question_rewriter))
-    workflow.add_node("out_of_scope_response", lambda state: retrieve(state, llm))
+    workflow.add_node(
+        "grade_documents",
+        lambda state: grade_documents(
+            state,
+            retrieval_grader))
+    workflow.add_node(
+        "generate",
+        lambda state: generate(
+            state,
+            rag_chain,
+            llm))
+    workflow.add_node(
+        "transform_query",
+        lambda state: transform_query(
+            state,
+            question_rewriter))
+    workflow.add_node(
+        "out_of_scope_response",
+        lambda state: retrieve(
+            state,
+            llm))
 
     # Set the entry point and define the edges
     workflow.set_entry_point("retrieve")
@@ -236,7 +304,9 @@ def query_vector_store_with_llm(query, persistent_directory, embedding_model, ll
     workflow.add_edge("transform_query", "retrieve")
     workflow.add_conditional_edges(
         "generate",
-        lambda state: grade_generation_v_documents_and_question(state, hallucination_grader, answer_grader),
+        lambda state: grade_generation_v_documents_and_question(
+            state, hallucination_grader, answer_grader
+        ),
         {
             "not supported": "generate",
             "useful": END,
@@ -255,9 +325,11 @@ def query_vector_store_with_llm(query, persistent_directory, embedding_model, ll
 
     return final_output["generation"]
 
+
 # ------------------------------------------------------------------------------------------------------
 # METHODS NOT USEFUL FOR THIS SPECIFIC TASK
 # ------------------------------------------------------------------------------------------------------
+
 
 # Function for expanding the user query
 def expand_query(query):
@@ -265,19 +337,20 @@ def expand_query(query):
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.0, max_tokens=100)
 
     # Initialize prompt template
-    prompt = f"""Optimize the following query to better suit a 
+    prompt = f"""Optimize the following query to better suit a
     Retrieval-Augmented Generation (RAG) system, where the vector store is
-    constructed from code files that have been summarized by a Large Language Model (LLM). 
+    constructed from code files that have been summarized by a Large Language Model (LLM).
     Ensure the query aligns with the summarized nature of the data, improving retrieval accuracy and relevance.
 
     Return only the enhanced query and no other text.
 
     Original query: {query}
     """
-    
+
     # Return expanded query
     expanded_query = llm.invoke(prompt)
     return expanded_query.content.strip('"').strip()
+
 
 # Function for reranking with LLM
 def rerank_with_llm(query, documents):
@@ -290,18 +363,21 @@ def rerank_with_llm(query, documents):
         prompt = f"""
         Given the query: "{query}"
         Rank the relevance of the following retrieved document on a scale of 1 to 100:
-        
+
         {doc.page_content[:2000]}
 
         Provide only a numeric score (1-100) with no extra text.
         """
         score = llm.invoke(prompt).content.strip()
-        
+
         try:
             doc.metadata["rerank_score"] = float(score)
             ranked_docs.append(doc)
         except ValueError:
             continue
-    
+
     # Return sorted docs
-    return sorted(ranked_docs, key=lambda x: x.metadata["rerank_score"], reverse=True)
+    return sorted(
+        ranked_docs,
+        key=lambda x: x.metadata["rerank_score"],
+        reverse=True)

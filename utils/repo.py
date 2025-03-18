@@ -2,10 +2,12 @@ import re
 import os
 from git import Repo
 
+
 # Function for extracting Github repo name
 def extract_repo_name(url: str) -> str:
-    match = re.search(r'github\.com/([^/]+/[^/]+)', url)
+    match = re.search(r"github\.com/([^/]+/[^/]+)", url)
     return match.group(1)
+
 
 # Function for cloning a GitHub repo
 def clone_repo(repo_url, data_path):
@@ -16,9 +18,10 @@ def clone_repo(repo_url, data_path):
     else:
         print("Repo already cloned.")
 
+
 # Function for parsing chroma files names
 def parse_file_path(file_path):
-    pattern = r'chroma_([^/]+)/([^/]+)_\d{4}_\d{3}_([^/_]+)_([^/_]+)$'
+    pattern = r"chroma_([^/]+)/([^/]+)_\d{4}_\d{3}_([^/_]+)_([^/_]+)$"
 
     match = re.search(pattern, file_path)
     if match:

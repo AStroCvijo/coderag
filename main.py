@@ -22,9 +22,26 @@ if __name__ == "__main__":
         clone_repo(repo_url, data_path)
 
         # Create the vector store
-        persistent_directory = os.path.join("db", f"chroma_{extract_repo_name(repo_url)}_{args.chunk_size}_{args.chunk_overlap}_{args.embedding_model}_{args.llm}")
+        persistent_directory = os.path.join(
+            "db",
+            f"chroma_{
+                extract_repo_name(repo_url)}_{
+                args.chunk_size}_{
+                args.chunk_overlap}_{
+                    args.embedding_model}_{
+                        args.llm}",
+        )
         if not os.path.exists(persistent_directory):
-            create_vector_store(data_path, extensions, persistent_directory, args.chunk_size, args.chunk_overlap, args.embedding_model, args.llm_summary, args.llm)
+            create_vector_store(
+                data_path,
+                extensions,
+                persistent_directory,
+                args.chunk_size,
+                args.chunk_overlap,
+                args.embedding_model,
+                args.llm_summary,
+                args.llm,
+            )
         else:
             print("Vector store with those settings already exists.")
 
