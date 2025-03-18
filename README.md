@@ -1,87 +1,56 @@
 
-# LLM Listwise Reranker for CodeRAG
+# **LLM Listwise Reranker for CodeRAG**
 
-Project made for the purpose of applying to JetBrains internship.  
+Retrieval-Augmented Generation (RAG) system over a code repository for a question-answering task
 
-Retrieval-Augmented Generation (RAG) system over a code repository for a question-answering task.
+Developed as part of an application for a JetBrains internship.
 
-Date of creation: March, 2024
+## ⚡**Quickstart**
 
-## Quickstart
-1. Setup
-    ```bash
-    git clone https://github.com/AStroCvijo/llm_listwise_reranker_for_coderag.git
-	cd llm_listwise_reranker_for_coderag
-	conda create -n rag
-	pip install -r requirements.txt
-	```
-2. Run with user interface
-    ```bash
-    python main.py -ui
-    ```
-## Evaluation
-To evaluate the performance on the provided test with default settings run the following commands
+### **Prerequisites**
+- Python 3.8+
+- Conda (for environment management)
+
+### 🛠️**Setup**
+Clone the repository and install dependencies:
+
+```bash
+git clone https://github.com/AStroCvijo/llm_listwise_reranker_for_coderag.git
+cd llm_listwise_reranker_for_coderag
+conda create -n rag python=3.8
+conda activate rag
+pip install -r requirements.txt
+```
+
+### 🖥️**Run with User Interface**
+```bash
+python main.py -ui
+```
+
+## 📊**Evaluation**
+To evaluate the model on the provided test set:
+
 ```bash
 chmod +x eval.sh
 ./eval.sh
 ```
 
-## Arguments Guide
+## 📖**Arguments Guide**
 
-### RAG (Retrieval-Augmented Generation) Arguments
+| Argument | Description | Default | Options |
+|----------|------------|---------|---------|
+| `-k`, `--top_k` | Number of results retrieved per query | `30` | Any positive integer |
+| `-cs`, `--chunk_size` | Text chunk size for indexing | `1200` | Any positive integer |
+| `-co`, `--chunk_overlap` | Overlapping tokens between chunks | `200` | Any non-negative integer |
+| `-ls`, `--llm_summary` | Enable document summarization | `True` | `True`, `False` |
+| `-em`, `--embedding_model` | Embedding model selection | `text-embedding-3-large` | `text-embedding-3-large`, `text-embedding-3-small`, `text-embedding-ada-002` |
+| `-m`, `--model` | LLM model to use | `gpt-3.5-turbo` | `gpt-4`, `gpt-3.5-turbo`, `gpt-4o-mini` |
+| `-ui`, `--user_interface` | Enable UI mode | `False` | `True`, `False` |
+| `-v`, `--verbose` | Enable debugging output | `False` | `True`, `False` |
+| `-e`, `--eval` | Enable evaluation mode | `False` | `True`, `False` |
+| `-ru`, `--repo_url` | Repository URL for indexing | `https://github.com/viarotel-org/escrcpy` | Any valid repo URL |
 
-`-k or --top_k`  
-Specify the number of results to retrieve from the index for each query. Default: `30`.  
-Range: Any positive integer.
-
-`-cs or --chunk_size`  
-Define the size of each text chunk for indexing. Default: `1200`.  
-Range: Any positive integer.
-
-`-co or --chunk_overlap`  
-Specify the number of overlapping tokens between consecutive chunks. Default: `200`.  
-Range: Any non-negative integer.
-
-`-ls or --llm_summary`  
-Enable or disable summarization of documents before passing them to the model. Default: `True`.  
-Options: `True` or `False`.
-
-`-em or --embedding_model`  
-Specify the embedding model to use. Default: `text-embedding-3-large`.  
-Options:
-- `text-embedding-3-large`
-- `text-embedding-3-small`
-- `text-embedding-ada-002`
-- `text-embedding-babbage-001`
-- `text-embedding-curie-001`
-- `text-embedding-davinci-002`
-
-### Other Arguments
-
-`-ui or --user_interface`  
-Enable the user interface. Default: `False`.  
-Options: `True` (for enabling UI) or `False` (for disabling UI).
-
-`-v or --verbose`  
-Enable verbose mode for debugging output. Default: `False`.  
-Options: `True` or `False`.
-
-`-e or --eval`  
-Enable model evaluation mode. Default: `False`.  
-Options: `True` or `False`.
-
-`-m or --model`  
-Specify the model to use. Default: `gpt-3.5-turbo`.  
-Options:
-- `gpt-4`
-- `gpt-3.5-turbo`
-- `gpt-4o-mini`
-
-`-ru or --repo_url`  
-Specify the repository URL to use. Default: `https://github.com/viarotel-org/escrcpy`.  
-Example: `https://github.com/viarotel-org/escrcpy`
-
-# Experiments
+# 📄Experiments
 
 For detailed experiments and evaluations of this RAG system, please refer to the following document:
 
