@@ -1,6 +1,7 @@
 import os
 import ast
 import torch
+from tqdm import tqdm
 from generate import *
 from pathlib import Path
 from langchain_chroma import Chroma
@@ -17,29 +18,29 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 # ------------------------------------------------------------------------------------------------------
 
 def get_embeddings_function(embedding_model):
-    """Returns the appropriate embeddings function based on the model type."""
+    # Check if the model is OpenAI or Hugging Face
     if embedding_model in OPENAI_MODELS:
         return OpenAIEmbeddings(model=embedding_model)
     else:
+        # Load Hugging Face model dynamically
         tokenizer = AutoTokenizer.from_pretrained(embedding_model)
         model = AutoModel.from_pretrained(embedding_model)
-        
-        def hf_embeddings(texts):
+
+        # Define the embeddings function for Hugging Face models
+        def embeddings(texts):
             tokens = tokenizer(texts, return_tensors="pt", padding=True, truncation=True)
             with torch.no_grad():
                 output = model(**tokens)
             return output.last_hidden_state.mean(dim=1).tolist()
-        
-        return hf_embeddings
 
 # ------------------------------------------------------------------------------------------------------
 # VECTORSTORE CREATION
 # ------------------------------------------------------------------------------------------------------
 
 # Function for generating code summaries
-def generate_summary(code):
+def generate_summary(code, llm):
     # Initialize LLM
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.0, max_tokens=400)
+    llm = ChatOpenAI(model=llm, temperature=0.0, max_tokens=400)
     
     # Initialize prompt template
     prompt = f"""
@@ -82,7 +83,7 @@ def get_code_files(data_path, extensions):
     return code_files
 
 # Function to process a single file
-def process_file(file_path, data_path, llm_summary):
+def process_file(file_path, data_path, llm_summary, llm):
     try:
         with open(file_path, "r", encoding="utf-8", errors="replace") as f:
             content = f.read()
@@ -101,9 +102,9 @@ def process_file(file_path, data_path, llm_summary):
         }
 
         if llm_summary:
-            summary = generate_summary(content)
+            summary = generate_summary(content, llm)
             return Document(
-                page_content=f"SUMMARY: {summary}\n\nCODE SNIPPET: {content}...",
+                page_content=f"SUMMARY: {summary}\n\nCODE SNIPPET: {content[:2000]}...",
                 metadata=metadata
             )
         else:
@@ -116,14 +117,14 @@ def process_file(file_path, data_path, llm_summary):
         return None
 
 # Function to load files and process them in parallel
-def load_files_as_documents(data_path, extensions, llm_summary=False):
+def load_files_as_documents(data_path, extensions, llm, llm_summary=False):
     code_files = get_code_files(data_path, extensions)
     docs = []
 
     with ThreadPoolExecutor() as executor:
-        future_to_file = {executor.submit(process_file, file, data_path, llm_summary): file for file in code_files}
+        future_to_file = {executor.submit(process_file, file, data_path, llm_summary, llm): file for file in code_files}
 
-        for future in as_completed(future_to_file):
+        for future in tqdm(as_completed(future_to_file), total=len(code_files), desc="Processing files"):
             doc = future.result()
             if doc:  # Ignore failed cases
                 docs.append(doc)
@@ -131,10 +132,10 @@ def load_files_as_documents(data_path, extensions, llm_summary=False):
     return docs
 
 # Function for creating the vector store
-def create_vector_store(data_path, extensions, persistent_directory, chunk_size, chunk_overlap, embedding_model, llm_summary):
+def create_vector_store(data_path, extensions, persistent_directory, chunk_size, chunk_overlap, embedding_model, llm_summary, llm):
     # Load all the docs
     print("Loading files... (this may take a while)")
-    docs = load_files_as_documents(data_path, extensions, llm_summary)
+    docs = load_files_as_documents(data_path, extensions, llm, llm_summary)
 
     if not docs:
         print("No documents found. Exiting.")
@@ -189,8 +190,8 @@ def query_vector_store(query, persistent_directory, k, embedding_model):
     # Sort by relevance score in descending order
     sorted_docs = sorted(unique_docs, key=lambda x: x.metadata.get("score", 0.0), reverse=True)
 
-    # Select only the top 40 documents
-    top_docs = sorted_docs[:40]
+    # Select only the top 10 documents
+    top_docs = sorted_docs[:10]
 
     # Extract file names
     retrieved_files = [doc.metadata.get("source") for doc in top_docs]
@@ -198,7 +199,7 @@ def query_vector_store(query, persistent_directory, k, embedding_model):
     return retrieved_files
 
 # Function for generating LLM summaries of the retrieved code files
-def query_vector_store_with_llm(query, persistent_directory, embedding_model):
+def query_vector_store_with_llm(query, persistent_directory, embedding_model, llm):
     # Get embeddings function based on model type
     embeddings = get_embeddings_function(embedding_model)
 
@@ -208,15 +209,17 @@ def query_vector_store_with_llm(query, persistent_directory, embedding_model):
     # Use the 'similarity' search type
     retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 10})
 
+    retrieval_grader, rag_chain, hallucination_grader, answer_grader, question_rewriter = init_agents(llm)
+
     # Create a new workflow instance
     workflow = StateGraph(GraphState)
 
     # Add nodes to the workflow
     workflow.add_node("retrieve", lambda state: retrieve(state, retriever))
-    workflow.add_node("grade_documents", grade_documents)
-    workflow.add_node("generate", generate)
-    workflow.add_node("transform_query", transform_query)
-    workflow.add_node("out_of_scope_response", out_of_scope_response)
+    workflow.add_node("grade_documents", lambda state: grade_documents(state, retrieval_grader))
+    workflow.add_node("generate", lambda state: generate(state, rag_chain, llm))
+    workflow.add_node("transform_query", lambda state: transform_query(state, question_rewriter))
+    workflow.add_node("out_of_scope_response", lambda state: retrieve(state, llm))
 
     # Set the entry point and define the edges
     workflow.set_entry_point("retrieve")
@@ -233,7 +236,7 @@ def query_vector_store_with_llm(query, persistent_directory, embedding_model):
     workflow.add_edge("transform_query", "retrieve")
     workflow.add_conditional_edges(
         "generate",
-        grade_generation_v_documents_and_question,
+        lambda state: grade_generation_v_documents_and_question(state, hallucination_grader, answer_grader),
         {
             "not supported": "generate",
             "useful": END,

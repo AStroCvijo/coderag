@@ -7,10 +7,9 @@ from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.console import Console
 from collections import defaultdict
-
 from utils.repo import *
 from eval.eval import eval
-from utils.const import extensions
+from utils.const import *
 from rag import create_vector_store
 from ui.query_ui import start_query_ui
 
@@ -20,7 +19,7 @@ console = Console()
 def print_banner():
     console.print(
         Panel(
-            "[bold cyan]Welcome to the AI-Powered RAG System![/bold cyan]([italic yellow]Type HELP for a list of commands[/italic yellow])", 
+            "[bold cyan]Welcome to the AI-Powered RAG System![/bold cyan] ([italic yellow]Type HELP for a list of commands[/italic yellow])", 
             border_style="cyan"
         )
     )
@@ -89,6 +88,22 @@ def start_ui(args):
                         break
                     console.print("[bold red]Error: Chunk overlap must be a non-negative integer.[/bold red]")
 
+                # Keep prompting until a valid embedding model is entered
+                while True:
+                    available_models = OPENAI_MODELS
+                    console.print("[bold blue]Available embedding models:[/bold blue]")
+                    for i, model in enumerate(available_models, 1):
+                        console.print(f"{i}. {model}")
+                    model_choice = get_input_with_cancel("[bold blue]Select an embedding model by number:[/bold blue]")
+                    if model_choice is None:
+                        console.print("[bold yellow]Indexing canceled by user.[/bold yellow]")
+                        return
+                    if model_choice.isdigit() and 1 <= int(model_choice) <= len(available_models):
+                        embedding_model = available_models[int(model_choice) - 1]
+                        break
+                    console.print("[bold red]Error: Please enter a valid number corresponding to an embedding model.[/bold red]")
+                    
+
                 # Keep prompting until a valid LLM summary option is entered
                 while True:
                     llm_summary = False
@@ -100,13 +115,29 @@ def start_ui(args):
                         llm_summary = True
                         break
                     if user_input.lower() in ["n", "no"]:
+                        llm = 'NoSummary'
                         break
                     console.print("[bold red]Error: Please enter 'Y' or 'N' for LLM summary.[/bold red]")
+                
+                if llm_summary == True:
+                    # Keep prompting until a valid embedding model is entered
+                    while True:
+                        available_llms = LLMS
+                        console.print("[bold blue]Available large language models:[/bold blue]")
+                        for i, llm in enumerate(available_llms, 1):
+                            console.print(f"{i}. {llm}")
+                        llm_choice = get_input_with_cancel("[bold blue]Select a LLM by number[/bold blue]")
+                        if llm_choice is None:
+                            console.print("[bold yellow]Indexing canceled by user.[/bold yellow]")
+                            return
+                        if llm_choice.isdigit() and 1 <= int(llm_choice) <= len(available_llms):
+                            llm = available_llms[int(llm_choice) - 1]
+                            break
+                        console.print("[bold red]Error: Please enter a valid number corresponding to a LLM model.[/bold red]")                
 
-                persistent_directory = os.path.join("db", f"chroma_{extract_repo_name(repo_url)}_{args.chunk_size}_{args.chunk_overlap}_{args.embedding_model}")
+                persistent_directory = os.path.join("db", f"chroma_{extract_repo_name(repo_url)}_{chunk_size}_{chunk_overlap}_{embedding_model}_{llm}")
                 if not os.path.exists(persistent_directory):
-                    # Note: allow user to choose the embedding model
-                    create_vector_store(data_path, extensions, persistent_directory, chunk_size, chunk_overlap, args.embedding_model, llm_summary)
+                    create_vector_store(data_path, extensions, persistent_directory, chunk_size, chunk_overlap, embedding_model, llm_summary, llm)
                 else:
                     console.print("[bold yellow]Vector store with those settings already exists.[/bold yellow]")
 
@@ -160,7 +191,7 @@ def start_ui(args):
 
             # Prompt user for selection
             try:
-                choice = int(input("\nEnter the number of the vector store you want to query: "))
+                choice = int(get_input_with_cancel("[bold blue]Enter the number of the vector store you want to query[/bold blue]"))
                 if 1 <= choice <= len(chroma_list):
                     selected_user, selected_chroma = chroma_list[choice - 1]
                     

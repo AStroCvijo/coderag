@@ -23,7 +23,7 @@ def arg_parse():
     parser.add_argument('-v',  '--verbose',        action="store_true", default=False)
 
     parser.add_argument('-e',  '--eval',           action="store_true", default=False)
-    parser.add_argument('-m',  '--model',          type=str,            choices=['gpt-4', 'gpt-3.5-turbo', 'gpt-4o-mini'], default='gpt-3.5-turbo') 
+    parser.add_argument('-m',  '--llm',            type=str,            choices=['gpt-4', 'gpt-3.5-turbo', 'gpt-4o-mini'], default='gpt-3.5-turbo') 
     parser.add_argument('-ru', '--repo_url',       type=str,            default="https://github.com/viarotel-org/escrcpy")
 
     # Parse the arguments
