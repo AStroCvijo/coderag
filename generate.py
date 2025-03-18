@@ -15,18 +15,21 @@ from langchain_core.output_parsers import StrOutputParser
 # RETRIEVAL GRADER
 # ------------------------------------------------------------------------------------------------------
 
-# Get the OpenAI API
+# Get the OpenAI API key
 if not os.environ.get("OPENAI_API_KEY"):
     os.environ["OPENAI_API_KEY"] = getpass.getpass("Enter API key for OpenAI: ")
 
+# Define a Pydantic model
 class GradeDocuments(BaseModel):
     binary_score: str = Field(
         description="Documents are relevant to the question, 'yes' or 'no'"
     )
 
+# Initialize the LLM
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.0)
 structured_llm_grader = llm.with_structured_output(GradeDocuments)
 
+# Define the system prompt
 system = """You are a grader assessing relevance of a retrieved document to a user question. \n 
     If the document contains keyword(s) or semantic meaning related to the user question, grade it as relevant. \n
     It does not need to be a stringent test. The goal is to filter out erroneous retrievals. \n
@@ -44,11 +47,9 @@ retrieval_grader = grade_prompt | structured_llm_grader
 # ANSWER GENERATOR
 # ------------------------------------------------------------------------------------------------------
 
+# Pull the RAG prompt from the hub
 prompt = hub.pull("rlm/rag-prompt")
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.0)
-
-def format_docs(docs):
-    return "\n\n".join(doc.page_content for doc in docs)
 
 rag_chain = prompt | llm | StrOutputParser()
 
@@ -56,14 +57,17 @@ rag_chain = prompt | llm | StrOutputParser()
 # HALLUCINATION GRADER
 # ------------------------------------------------------------------------------------------------------
 
+# Define a Pydantic model
 class GradeHallucinations(BaseModel):
     binary_score: str = Field(
         description="Answer is grounded in the facts, 'yes' or 'no'"
     )
 
+# Initialize the LLM
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.0)
 structured_llm_grader = llm.with_structured_output(GradeHallucinations)
 
+# Define the system prompt for
 system = """You are a grader assessing whether an LLM generation is grounded in / supported by a set of retrieved facts. \n 
      Give a binary score 'yes' or 'no'. 'Yes' means that the answer is grounded in / supported by the set of facts."""
 hallucination_prompt = ChatPromptTemplate.from_messages(
@@ -79,14 +83,17 @@ hallucination_grader = hallucination_prompt | structured_llm_grader
 # ANSWER GRADER
 # ------------------------------------------------------------------------------------------------------
 
+# Define a Pydantic model
 class GradeAnswer(BaseModel):
     binary_score: str = Field(
         description="Answer addresses the question, 'yes' or 'no'"
     )
 
+# Initialize the LLM
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.0)
 structured_llm_grader = llm.with_structured_output(GradeAnswer)
 
+# Define the system prompt
 system = """You are a grader assessing whether an answer addresses / resolves a question \n 
      Give a binary score 'yes' or 'no'. Yes' means that the answer resolves the question."""
 answer_prompt = ChatPromptTemplate.from_messages(
@@ -102,8 +109,10 @@ answer_grader = answer_prompt | structured_llm_grader
 # QUESTION RE-WRITER
 # ------------------------------------------------------------------------------------------------------
 
+# Initialize the LLM
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.0)
 
+# Define the system prompt
 system = """You a question re-writer that converts an input question to a better version that is optimized \n 
      for vectorstore retrieval. Look at the input and try to reason about the underlying semantic intent / meaning."""
 re_write_prompt = ChatPromptTemplate.from_messages(
@@ -122,6 +131,7 @@ question_rewriter = re_write_prompt | llm | StrOutputParser()
 # OUT OF SCOPE RESPONSE
 # ------------------------------------------------------------------------------------------------------
 
+# Function for handling out-of-scope questions
 def out_of_scope_response(state):
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.0)
     prompt = ChatPromptTemplate.from_messages([
@@ -137,6 +147,7 @@ def out_of_scope_response(state):
 # GRAPH
 # ------------------------------------------------------------------------------------------------------
 
+# Define the state structure for the graph
 class GraphState(TypedDict):
     question: str
     generation: str
@@ -146,30 +157,29 @@ class GraphState(TypedDict):
 # GRAPH NODES
 # ------------------------------------------------------------------------------------------------------
 
+# Function for retrieving docs based on the question
 def retrieve(state, retriever):
     question = state["question"]
     documents = retriever.invoke(question)
     
+    # Replace the document's content with the actual content from the source file
     for doc in documents:
-        # Get the source path from the document's metadata
         source_path = doc.metadata.get("absolute_path")
-        
-        # Read the actual content from the source file
         if source_path:
             with open(source_path, "r") as file:
                 actual_content = file.read()
-            
-            # Replace the document's page_content with the actual content
             doc.page_content = actual_content
     
     return {"documents": documents, "question": question}
 
+# Function for generating an answer using the RAG chain
 def generate(state):
     question = state["question"]
     documents = state["documents"]
     generation = rag_chain.invoke({"context": documents, "question": question})
     return {"documents": documents, "question": question, "generation": generation}
 
+# Function for grading the relevance of documents
 def grade_documents(state):
     question = state["question"]
     documents = state["documents"]
@@ -180,6 +190,7 @@ def grade_documents(state):
             filtered_docs.append(d)
     return {"documents": filtered_docs, "question": question}
 
+# Function for transforming the query into a better version for retrieval
 def transform_query(state):
     question = state["question"]
     better_question = question_rewriter.invoke({"question": question})
@@ -189,18 +200,22 @@ def transform_query(state):
 # GRAPH EDGES
 # ------------------------------------------------------------------------------------------------------
 
+# Function for deciding whether to generate an answer or handle an out-of-scope question
 def decide_to_generate(state):
     if not state["documents"]:
         return "out_of_scope"
     return "generate"
 
+# Function for grading the generation against the documents and the question
 def grade_generation_v_documents_and_question(state):
     question = state["question"]
     documents = state["documents"]
     generation = state["generation"]
 
+    # Check if the generation is grounded in the documents
     score = hallucination_grader.invoke({"documents": documents, "generation": generation})
     if score.binary_score == "yes":
+        # Check if the generation answers the question
         score = answer_grader.invoke({"question": question, "generation": generation})
         if score.binary_score == "yes":
             return "useful"

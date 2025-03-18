@@ -1,71 +1,58 @@
 import os
 import ast
-from utils.const import OPENAI_MODELS
+import torch
 from generate import *
 from pathlib import Path
 from langchain_chroma import Chroma
 from langchain.schema import Document
+from utils.const import OPENAI_MODELS
 from langchain_openai import ChatOpenAI
+from transformers import pipeline, AutoTokenizer
 from langchain_openai import OpenAIEmbeddings
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from transformers import AutoModelForCausalLM, AutoModel
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings
-from transformers import AutoModel, AutoTokenizer
-import torch
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.llms import HuggingFacePipeline
 
-# Function for expanding the user query
-def expand_query(query):
-    # Initialize LLM
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.0, max_tokens=100)
+# ------------------------------------------------------------------------------------------------------
+# VECTORSTORE CREATION
+# ------------------------------------------------------------------------------------------------------
 
-    # Initialize prompt template
-    prompt = f"""Optimize the following query to better suit a 
-    Retrieval-Augmented Generation (RAG) system, where the vector store is
-    constructed from code files that have been summarized by a Large Language Model (LLM). 
-    Ensure the query aligns with the summarized nature of the data, improving retrieval accuracy and relevance.
+def get_embeddings(embedding_model):
+    """ Unified embedding handler for both OpenAI and Hugging Face models """
+    if embedding_model in OPENAI_MODELS:
+        return OpenAIEmbeddings(model=embedding_model)
+    else:
+        return HuggingFaceEmbeddings(
+            model_name=embedding_model,
+            model_kwargs={'device': 'cuda' if torch.cuda.is_available() else 'cpu'},
+            encode_kwargs={'normalize_embeddings': True}
+        )
 
-    Return only the enhanced query and no other text.
-
-    Original query: {query}
-    """
-    
-    # Return expanded query
-    expanded_query = llm.invoke(prompt)
-    return expanded_query.content.strip('"').strip()
-
-# Function for reranking with LLM
-def rerank_with_llm(query, documents):
-    # Initialize LLM
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.0)
-
-    ranked_docs = []
-    for doc in documents:
-        # Initialize prompt template
-        prompt = f"""
-        Given the query: "{query}"
-        Rank the relevance of the following retrieved document on a scale of 1 to 100:
+def get_llm(model_name, provider="openai", max_tokens=400):
+    """ Unified LLM factory for both providers """
+    if provider == "openai":
+        return ChatOpenAI(model=model_name, temperature=0.0, max_tokens=max_tokens)
+    elif provider == "huggingface":
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        model = AutoModelForCausalLM.from_pretrained(model_name)
         
-        {doc.page_content[:2000]}
+        pipe = pipeline(
+            "text-generation",
+            model=model,
+            tokenizer=tokenizer,
+            device=0 if torch.cuda.is_available() else -1,
+            max_new_tokens=max_tokens,
+            do_sample=True,
+            temperature=0.1
+        )
+        return HuggingFacePipeline(pipeline=pipe)
 
-        Provide only a numeric score (1-100) with no extra text.
-        """
-        score = llm.invoke(prompt).content.strip()
-        
-        try:
-            doc.metadata["rerank_score"] = float(score)
-            ranked_docs.append(doc)
-        except ValueError:
-            continue
+def generate_summary(code, llm_model, llm_provider):
+    """ Generic summary generation with model switching """
+    llm = get_llm(llm_model, llm_provider)
     
-    # Return sorted docs
-    return sorted(ranked_docs, key=lambda x: x.metadata["rerank_score"], reverse=True)
-
-# Function for generating code summaries
-def generate_summary(code):
-    # Initialize LLM
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.0, max_tokens=400)
-    
-    # Initialize prompt template
     prompt = f"""
     Analyze the following code and create a structured summary containing:
     1. Key functionality and purpose (1-2 sentences)
@@ -82,11 +69,9 @@ def generate_summary(code):
     Summary:
     """
     
-    # Return code summary
     summary = llm.invoke(prompt)
     return summary.content.strip()
 
-# Function for extracting file metadata
 def extract_code_metadata(code):
     try:
         tree = ast.parse(code)
@@ -96,7 +81,6 @@ def extract_code_metadata(code):
     except Exception:
         return [], []
 
-# Function to recursively get all code files with specified extension in a folder
 def get_code_files(data_path, extensions):
     code_files = []
     for root, _, files in os.walk(data_path):
@@ -105,8 +89,7 @@ def get_code_files(data_path, extensions):
                 code_files.append(os.path.join(root, file))
     return code_files
 
-# Function to process a single file
-def process_file(file_path, data_path, llm_summary):
+def process_file(file_path, data_path, llm_summary, llm_model, llm_provider):
     try:
         with open(file_path, "r", encoding="utf-8", errors="replace") as f:
             content = f.read()
@@ -125,7 +108,7 @@ def process_file(file_path, data_path, llm_summary):
         }
 
         if llm_summary:
-            summary = generate_summary(content)
+            summary = generate_summary(content, llm_model, llm_provider)
             return Document(
                 page_content=f"SUMMARY: {summary}\n\nCODE SNIPPET: {content}...",
                 metadata=metadata
@@ -139,60 +122,55 @@ def process_file(file_path, data_path, llm_summary):
         print(f"Error processing file {file_path}: {e}")
         return None
 
-# Function to load files and process them in parallel
-def load_files_as_documents(data_path, extensions, llm_summary=False):
+def load_files_as_documents(data_path, extensions, llm_summary=False, llm_model="gpt-4", llm_provider="openai"):
     code_files = get_code_files(data_path, extensions)
     docs = []
 
     with ThreadPoolExecutor() as executor:
-        future_to_file = {executor.submit(process_file, file, data_path, llm_summary): file for file in code_files}
+        futures = []
+        for file in code_files:
+            futures.append(
+                executor.submit(
+                    process_file,
+                    file,
+                    data_path,
+                    llm_summary,
+                    llm_model,
+                    llm_provider
+                )
+            )
 
-        for future in as_completed(future_to_file):
+        for future in as_completed(futures):
             doc = future.result()
-            if doc:  # Ignore failed cases
+            if doc:
                 docs.append(doc)
 
     return docs
 
-# Function for creating the vector store
-def create_vector_store(data_path, extensions, persistent_directory, chunk_size, chunk_overlap, embedding_model, llm_summary):
-    # Load all the docs
-    print("Loading files... (this may take a while)")
-    docs = load_files_as_documents(data_path, extensions, llm_summary)
+def create_vector_store(data_path, extensions, persistent_directory, chunk_size=1000, 
+                       chunk_overlap=200, embedding_model="text-embedding-3-small", 
+                       llm_summary=False, llm_model="gpt-4", llm_provider="openai"):
+    
+    print("Loading files...")
+    docs = load_files_as_documents(
+        data_path, extensions, llm_summary, llm_model, llm_provider
+    )
 
     if not docs:
-        print("No documents found. Exiting.")
+        print("No documents found")
         return
 
-    # Split code into chunks
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, 
-                                                   chunk_overlap=chunk_overlap,
-                                                   add_start_index=True)
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        add_start_index=True
+    )
     split_docs = text_splitter.split_documents(docs)
 
-    print(f"Number of chunks created: {len(split_docs)}")
-
-    if not split_docs:
-        print("No chunks created. Exiting.")
-        return
-
-    # Check if the model is OpenAI or Hugging Face
-    if embedding_model in OPENAI_MODELS:
-        # Dynamically use the correct dimension for OpenAI models
-        embeddings = OpenAIEmbeddings(model=embedding_model)
-    else:
-        # Load Hugging Face model dynamically
-        tokenizer = AutoTokenizer.from_pretrained(embedding_model)
-        model = AutoModel.from_pretrained(embedding_model)
-
-        # Define the embeddings function for Hugging Face models
-        def embeddings(texts):
-            tokens = tokenizer(texts, return_tensors="pt", padding=True, truncation=True)
-            with torch.no_grad():
-                output = model(**tokens)
-            return output.last_hidden_state.mean(dim=1).tolist()
-
-    # Create the Chroma vector store
+    print(f"Creating vector store with {len(split_docs)} chunks")
+    
+    embeddings = get_embeddings(embedding_model)
+    
     db = Chroma.from_documents(
         split_docs,
         embeddings,
@@ -202,91 +180,51 @@ def create_vector_store(data_path, extensions, persistent_directory, chunk_size,
     
     print(f"Vector store created at {persistent_directory}")
 
-# Function for querying the vector store
-def query_vector_store(query, persistent_directory, k, embedding_model):
-    # Check if the model is OpenAI or Hugging Face
-    if embedding_model in OPENAI_MODELS:
-        # Dynamically use the correct dimension for OpenAI models
-        embeddings = OpenAIEmbeddings(model=embedding_model)
-    else:
-        # Load Hugging Face model dynamically
-        tokenizer = AutoTokenizer.from_pretrained(embedding_model)
-        model = AutoModel.from_pretrained(embedding_model)
+# ------------------------------------------------------------------------------------------------------
+# VECTORSTORE QUERY
+# ------------------------------------------------------------------------------------------------------
 
-        # Define the embeddings function for Hugging Face models
-        def embeddings(texts):
-            tokens = tokenizer(texts, return_tensors="pt", padding=True, truncation=True)
-            with torch.no_grad():
-                output = model(**tokens)
-            return output.last_hidden_state.mean(dim=1).tolist()
-
-    # Load the Chroma database
+def query_vector_store(query, persistent_directory, embedding_model, k=40):
+    embeddings = get_embeddings(embedding_model)
     db = Chroma(persist_directory=persistent_directory, embedding_function=embeddings)
+    
+    retriever = db.as_retriever(
+        search_type="similarity",
+        search_kwargs={"k": k*2}  # Retrieve extra for deduplication
+    )
 
-    # Perform similarity search
-    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": k})
-
-    # Retrieve top-k documents
     docs = retriever.invoke(query)
+    
+    # Deduplicate and sort
+    unique_docs = {doc.metadata["source"]: doc for doc in docs}.values()
+    sorted_docs = sorted(unique_docs, key=lambda x: x.metadata.get("score", 0), reverse=True)
+    
+    return [doc.metadata["source"] for doc in sorted_docs[:k]]
 
-    # Ensure unique documents before sorting
-    unique_docs = {doc.metadata.get("source"): doc for doc in docs}.values()
-
-    # Sort by relevance score in descending order
-    sorted_docs = sorted(unique_docs, key=lambda x: x.metadata.get("score", 0.0), reverse=True)
-
-    # Select only the top 40 documents
-    top_docs = sorted_docs[:40]
-
-    # Extract file names
-    retrieved_files = [doc.metadata.get("source") for doc in top_docs]
-
-    return retrieved_files
-
-# Function for generating LLM summaries of the retrieved code files
-def query_vector_store_with_llm(query, persistent_directory, embedding_model):
-    # Check if the model is OpenAI or Hugging Face
-    if embedding_model in OPENAI_MODELS:
-        # Dynamically use the correct dimension for OpenAI models
-        embeddings = OpenAIEmbeddings(model=embedding_model)
-    else:
-        # Load Hugging Face model dynamically
-        tokenizer = AutoTokenizer.from_pretrained(embedding_model)
-        model = AutoModel.from_pretrained(embedding_model)
-
-        # Define the embeddings function for Hugging Face models
-        def embeddings(texts):
-            tokens = tokenizer(texts, return_tensors="pt", padding=True, truncation=True)
-            with torch.no_grad():
-                output = model(**tokens)
-            return output.last_hidden_state.mean(dim=1).tolist()
-
-    # Load the Chroma database
+def query_vector_store_with_llm(query, persistent_directory, embedding_model, 
+                              llm_model="gpt-4", llm_provider="openai"):
+    
+    embeddings = get_embeddings(embedding_model)
     db = Chroma(persist_directory=persistent_directory, embedding_function=embeddings)
-
-    # Use the 'similarity' search type
-    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 10})
-
-    # Create a new workflow instance
+    retriever = db.as_retriever(search_type="mmr", search_kwargs={"k": 8})
+    
+    llm = get_llm(llm_model, llm_provider, max_tokens=1000)
+    
+    # Initialize workflow components with current models
     workflow = StateGraph(GraphState)
-
-    # Add nodes to the workflow
     workflow.add_node("retrieve", lambda state: retrieve(state, retriever))
     workflow.add_node("grade_documents", grade_documents)
-    workflow.add_node("generate", generate)
+    workflow.add_node("generate", lambda state: generate(state, llm))
     workflow.add_node("transform_query", transform_query)
     workflow.add_node("out_of_scope_response", out_of_scope_response)
 
-    # Set the entry point and define the edges
+    # Connect nodes
     workflow.set_entry_point("retrieve")
     workflow.add_edge("retrieve", "grade_documents")
     workflow.add_conditional_edges(
         "grade_documents",
         decide_to_generate,
-        {
-            "out_of_scope": "out_of_scope_response",
-            "generate": "generate",
-        },
+        {"out_of_scope": "out_of_scope_response", "generate": "generate"},
     )
     workflow.add_edge("out_of_scope_response", END)
     workflow.add_edge("transform_query", "retrieve")
@@ -300,13 +238,43 @@ def query_vector_store_with_llm(query, persistent_directory, embedding_model):
         },
     )
 
-    # Compile the workflow
     app = workflow.compile()
-
-    # Genrate the answer
+    
     inputs = {"question": query}
     for output in app.stream(inputs):
         for key, value in output.items():
             final_output = value
 
     return final_output["generation"]
+
+# ------------------------------------------------------------------------------------------------------
+# ADDITIONAL UTILITIES
+# ------------------------------------------------------------------------------------------------------
+
+def expand_query(query, llm_model="gpt-4", llm_provider="openai"):
+    llm = get_llm(llm_model, llm_provider)
+    
+    prompt = f"""Optimize this query for RAG retrieval of code summaries:
+    Original: {query}
+    Enhanced: """
+    
+    return llm.invoke(prompt).content.strip('"').strip()
+
+def rerank_with_llm(query, documents, llm_model="gpt-4", llm_provider="openai"):
+    llm = get_llm(llm_model, llm_provider)
+    
+    ranked = []
+    for doc in documents:
+        prompt = f"""
+        Query: {query}
+        Document: {doc.page_content[:2000]}
+        Relevance score (1-100, no text): """
+        
+        score = llm.invoke(prompt).content.strip()
+        try:
+            doc.metadata["rerank_score"] = float(score)
+            ranked.append(doc)
+        except ValueError:
+            continue
+            
+    return sorted(ranked, key=lambda x: x.metadata["rerank_score"], reverse=True)
