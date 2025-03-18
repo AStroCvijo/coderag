@@ -1,0 +1,50 @@
+db/
+data/
+
+# Byte-compiled files
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+
+# Virtual environment
+venv/
+.env/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Logs and databases
+logs/
+*.log
+*.sqlite3
+*.db
+
+# Dependency management
+pip-log.txt
+pip-delete-this-directory.txt
+
+# IDE and editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing and coverage reports
+.coverage
+htmlcov/
+.tox/
+.nox/
+.pytest_cache/
+
+# Build and distribution
+dist/
+build/
+*.egg-info/
+
+# Docker
+*.dockerignore
+
+# Misc
+.DS_Store
+Thumbs.db
