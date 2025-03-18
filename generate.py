@@ -1,6 +1,8 @@
 import os
+import json
 import getpass
 import tiktoken
+import warnings
 from utils.const import *
 from langchain import hub
 from typing import Literal, List
@@ -179,14 +181,21 @@ def trim_documents(documents, max_tokens, model_name):
     current_token_count = 0
 
     for i, doc in enumerate(documents):
+        # Serialize metadata to string
+        metadata_str = json.dumps(doc.metadata)
+        
+        # Tokenize separately
         doc_tokens = encoding.encode(doc.page_content)
+        metadata_tokens = encoding.encode(metadata_str)
+        total_tokens = len(doc_tokens) + len(metadata_tokens)
 
         # Check if the document can fit within the remaining token limit
-        if current_token_count + len(doc_tokens) <= max_tokens:
+        if current_token_count + total_tokens <= max_tokens:
             trimmed_documents.append(doc)
-            current_token_count += len(doc_tokens)
+            current_token_count += total_tokens
         else:
             continue
+        
     return trimmed_documents
 
 # Function for generating an answer using the RAG chain

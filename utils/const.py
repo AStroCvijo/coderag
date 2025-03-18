@@ -9,7 +9,6 @@ LLMS = ['gpt-4', 'gpt-3.5-turbo', 'gpt-4o-mini']
 
 # OpenAI model context length
 MODEL_CONTEXT_LENGTHS = {
-    "gpt-4": 8192,
     "gpt-3.5-turbo": 16385,
     "gpt-4o-mini": 128000,
 }
