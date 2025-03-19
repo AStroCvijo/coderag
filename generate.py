@@ -2,14 +2,15 @@ import os
 import json
 import getpass
 import tiktoken
+from typing import List
 from utils.const import *
 from langchain import hub
-from typing import List
 from langchain.schema import Document
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
-from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
+from utils.model_handlers import get_llm
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
 # Get the OpenAI API key
@@ -17,8 +18,7 @@ if not os.environ.get("OPENAI_API_KEY"):
     os.environ["OPENAI_API_KEY"] = getpass.getpass(
         "Enter API key for OpenAI: ")
 
-
-def init_agents(llm):
+def init_agents(model_name):
     # ------------------------------------------------------------------------------------------------------
     # RETRIEVAL GRADER
     # ------------------------------------------------------------------------------------------------------
@@ -30,7 +30,7 @@ def init_agents(llm):
         )
 
     # Initialize the LLM
-    llm = ChatOpenAI(model=llm, temperature=0.0)
+    llm = get_llm(model_name)
     structured_llm_grader = llm.with_structured_output(GradeDocuments)
 
     # Define the system prompt
@@ -146,8 +146,8 @@ def init_agents(llm):
 
 
 # Function for handling out-of-scope questions
-def out_of_scope_response(state, llm):
-    llm = ChatOpenAI(model=llm, temperature=0.0)
+def out_of_scope_response(state, model_name):
+    llm = get_llm(model_name)
     prompt = ChatPromptTemplate.from_messages(
         [
             (

@@ -2,4 +2,5 @@ python main.py --eval \
 --verbose \
 --chunk_size 1200 \
 --chunk_overlap 200 \
---embedding_model text-embedding-3-large
+--embedding_model text-embedding-3-large \
+--llm gpt-4o-mini

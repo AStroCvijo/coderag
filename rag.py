@@ -7,35 +7,12 @@ from pathlib import Path
 from langchain_chroma import Chroma
 from langchain.schema import Document
 from utils.const import OPENAI_MODELS
-from langchain_openai import ChatOpenAI
-from langchain_openai import OpenAIEmbeddings
-from transformers import AutoModel, AutoTokenizer
+from langgraph.graph import END, StateGraph
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from utils.model_handlers import get_llm, get_embeddings_function
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
-# ------------------------------------------------------------------------------------------------------
-# EMBEDDING MODEL DETECTION
-# ------------------------------------------------------------------------------------------------------
-
-
-def get_embeddings_function(embedding_model):
-    # Check if the model is OpenAI or Hugging Face
-    if embedding_model in OPENAI_MODELS:
-        return OpenAIEmbeddings(model=embedding_model)
-    else:
-        # Load Hugging Face model dynamically
-        tokenizer = AutoTokenizer.from_pretrained(embedding_model)
-        model = AutoModel.from_pretrained(embedding_model)
-
-        # Define the embeddings function for Hugging Face models
-        def embeddings(texts):
-            tokens = tokenizer(
-                texts, return_tensors="pt", padding=True, truncation=True
-            )
-            with torch.no_grad():
-                output = model(**tokens)
-            return output.last_hidden_state.mean(dim=1).tolist()
-
+os.environ["LANGCHAIN_API_KEY"] = "your-api-key"
 
 # ------------------------------------------------------------------------------------------------------
 # VECTORSTORE CREATION
@@ -43,9 +20,9 @@ def get_embeddings_function(embedding_model):
 
 
 # Function for generating code summaries
-def generate_summary(code, llm):
+def generate_summary(code, model_name):
     # Initialize LLM
-    llm = ChatOpenAI(model=llm, temperature=0.0, max_tokens=400)
+    llm = get_llm(model_name)
 
     # Initialize prompt template
     prompt = f"""
@@ -115,7 +92,7 @@ def process_file(file_path, data_path, llm_summary, llm):
         if llm_summary:
             summary = generate_summary(content, llm)
             return Document(
-                page_content=f"SUMMARY: {summary}\n\nCODE SNIPPET: {content[:2000]}...",
+                page_content=f"SUMMARY: {summary}\n\nCODE SNIPPET: {content}...",
                 metadata=metadata,
             )
         else:
@@ -332,9 +309,9 @@ def query_vector_store_with_llm(
 
 
 # Function for expanding the user query
-def expand_query(query):
+def expand_query(query, model_name):
     # Initialize LLM
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.0, max_tokens=100)
+    llm = get_llm(model_name)
 
     # Initialize prompt template
     prompt = f"""Optimize the following query to better suit a
@@ -353,9 +330,9 @@ def expand_query(query):
 
 
 # Function for reranking with LLM
-def rerank_with_llm(query, documents):
+def rerank_with_llm(query, documents, model_name):
     # Initialize LLM
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.0)
+    llm = get_llm(model_name)
 
     ranked_docs = []
     for doc in documents:

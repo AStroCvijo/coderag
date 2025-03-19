@@ -179,11 +179,7 @@ def start_ui(args):
                             "[bold red]Error: Please enter a valid number corresponding to a LLM model.[/bold red]"
                         )
 
-                persistent_directory = os.path.join(
-                    "db",
-                    f"chroma_{
-                        extract_repo_name(repo_url)}_{chunk_size}_{chunk_overlap}_{embedding_model}_{llm}",
-                )
+                persistent_directory = os.path.join("db",f"chroma_{extract_repo_name(repo_url)}_{chunk_size}_{chunk_overlap}_{embedding_model}_{llm}",)
                 if not os.path.exists(persistent_directory):
                     create_vector_store(
                         data_path,

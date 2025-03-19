@@ -50,8 +50,6 @@ def eval(persistent_directory, args):
     # Save the final result to a log file
     with open("eval/eval_results.log", "a") as log_file:
         log_file.write(
-            f"Chunk size: {
-                args.chunk_size}, Chunk overlap: {
-                args.chunk_overlap}, Recall@10: {average_recall_at_10}\n")
+            f"Chunk size: {args.chunk_size}, Chunk overlap: {args.chunk_overlap}, Recall@10: {average_recall_at_10}\n")
 
     print("Results saved to 'eval/eval_results.log'\n")

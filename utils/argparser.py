@@ -36,7 +36,7 @@ def arg_parse():
         "--llm",
         type=str,
         choices=["gpt-4", "gpt-3.5-turbo", "gpt-4o-mini"],
-        default="gpt-3.5-turbo",
+        default="gpt-4o-mini",
     )
     parser.add_argument(
         "-ru",
