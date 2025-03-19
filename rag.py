@@ -190,7 +190,7 @@ def query_vector_store(query, persistent_directory, k, embedding_model):
         search_type="similarity",
         search_kwargs={
             "k": k})
-
+    # You can use expand query function here
     # Retrieve top-k documents
     docs = retriever.invoke(query)
 

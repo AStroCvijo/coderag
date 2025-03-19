@@ -2,9 +2,9 @@ import os
 from rag import *
 from utils.repo import *
 from eval.eval import eval
+from ui.main_ui import start_ui
 from utils.const import extensions
 from utils.argparser import arg_parse
-from ui.main_ui import start_ui
 
 if __name__ == "__main__":
     # Parse the arguments
