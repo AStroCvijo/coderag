@@ -27,7 +27,7 @@ pip install -r requirements.txt
 python main.py -ui
 ```
 
-## 📊**Evaluation**
+### 📊**Evaluation**
 To evaluate the model on the provided test set:
 
 ```bash
@@ -44,16 +44,22 @@ chmod +x eval.sh
 | `-co`, `--chunk_overlap` | Overlapping tokens between chunks | `200` | Any non-negative integer |
 | `-ls`, `--llm_summary` | Enable document summarization | `True` | `True`, `False` |
 | `-em`, `--embedding_model` | Embedding model selection | `text-embedding-3-large` | `text-embedding-3-large`, `text-embedding-3-small`, `text-embedding-ada-002` |
-| `-m`, `--model` | LLM model to use | `gpt-3.5-turbo` | `gpt-4`, `gpt-3.5-turbo`, `gpt-4o-mini` |
+| `-m`, `--llm` | LLM model to use | `gpt-4o-mini` | `gpt-3.5-turbo`, `gpt-4o-mini` |
 | `-ui`, `--user_interface` | Enable UI mode | `False` | `True`, `False` |
 | `-v`, `--verbose` | Enable debugging output | `False` | `True`, `False` |
 | `-e`, `--eval` | Enable evaluation mode | `False` | `True`, `False` |
 | `-ru`, `--repo_url` | Repository URL for indexing | `https://github.com/viarotel-org/escrcpy` | Any valid repo URL |
 
-# 📄Experiments
+## 📄**Experiments**
 
 For detailed experiments and evaluations of this RAG system, please refer to the following document:
 
 [Experiments and Evaluations](https://astrocvijo.github.io/llm_listwise_reranker_for_coderag/docs/experiments.pdf)
 
 This document provides comprehensive insights into the performance, benchmarks, and various configurations tested during the development of the LLM Listwise Reranker for CodeRAG. It includes comparisons of different embedding models, chunk sizes, and other parameters to help you understand the system's capabilities and optimize it for your specific use case.
+
+## 🧩**Seamless Integration with Multiple LLM and Embedding Providers (Local/API/Custom)**
+
+Currently, `utils/handlers.py` contains the handlers for LLM and embedding models, but only OpenAI models are implemented. To use a different LLM or embedding model, you can modify the logic in `utils/handlers.py` accordingly.
+
+**Note:** Models that support structured output and have a context length of at least **16,385** tokens are preferred.
