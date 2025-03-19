@@ -8,7 +8,7 @@ Developed as part of an application for a JetBrains internship.
 ## ⚡**Quickstart**
 
 ### **Prerequisites**
-- Python 3.8+
+- Python 3.9+
 - Conda (for environment management)
 
 ### 🛠️**Setup**
@@ -17,9 +17,9 @@ Clone the repository and install dependencies:
 ```bash
 git clone https://github.com/AStroCvijo/llm_listwise_reranker_for_coderag.git
 cd llm_listwise_reranker_for_coderag
-conda create -n rag python=3.8
+conda create -n rag python=3.9
 conda activate rag
-pip install -r requirements.txt
+pip install -r requirements.txt --index-url https://download.pytorch.org/whl/cu124 --extra-index-url https://pypi.org/simple --extra-index-url https://pypi.ngc.nvidia.com
 ```
 
 ### 🖥️**Run with User Interface**
@@ -62,4 +62,6 @@ This document provides comprehensive insights into the performance, benchmarks, 
 
 Currently, `utils/handlers.py` contains the handlers for LLM and embedding models, but only OpenAI models are implemented. To use a different LLM or embedding model, you can modify the logic in `utils/handlers.py` accordingly.
 
-**Note:** Models that support structured output and have a context length of at least **16,385** tokens are preferred.
+**Note:** The LLMs used should be compatible with LangChain and, preferably, support structured output. Additionally, they should have a context length of at least **16,385** tokens for optimal performance.
+
+
