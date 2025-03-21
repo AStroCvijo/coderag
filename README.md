@@ -66,5 +66,6 @@ Currently, `utils/handlers.py` contains the handlers for LLM and embedding model
 
 ## 📌TODO
 
-- [ ] - Implement proper Contextual embedding
-- [ ] - Implement Contextual BM25
+- [ ] - Implement proper **Contextual embedding**
+- [ ] - Implement **Contextual BM25**
+- [ ] - **Hugging Face** Model Handling
