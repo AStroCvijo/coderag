@@ -64,4 +64,7 @@ Currently, `utils/handlers.py` contains the handlers for LLM and embedding model
 
 **Note:** The LLMs used should be compatible with LangChain and, preferably, support structured output. Additionally, they should have a context length of at least **16,385** tokens for optimal performance.
 
+## TODO
 
+- [ ] - Implement proper Contextual embedding
+- [ ] - Implement Contextual BM25
