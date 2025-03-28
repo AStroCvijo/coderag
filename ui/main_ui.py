@@ -12,7 +12,6 @@ from ui.query_ui import start_query_ui
 
 console = Console()
 
-
 # Function for displaying the banner
 def print_banner():
     console.print(
@@ -22,12 +21,10 @@ def print_banner():
         )
     )
 
-
 # Function for clearing the screen
 def clear_screen():
     os.system("cls" if os.name == "nt" else "clear")
     print_banner()
-
 
 # Function for handling cancel process
 def get_input_with_cancel(prompt_text):
@@ -36,7 +33,6 @@ def get_input_with_cancel(prompt_text):
         console.print("[bold yellow]Indexing canceled by user.[/bold yellow]")
         return None
     return user_input
-
 
 # Function to start the UI
 def start_ui(args):

@@ -1,23 +1,24 @@
 import os
 import ast
-import torch
 from tqdm import tqdm
 from generate import *
 from pathlib import Path
+from colorama import init, Fore, Style
 from langchain_chroma import Chroma
 from langchain.schema import Document
-from utils.const import OPENAI_MODELS
 from langgraph.graph import END, StateGraph
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from utils.model_handlers import get_llm, get_embeddings_function
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+# Initialize colorama
+init(autoreset=True)
 
 os.environ["LANGCHAIN_API_KEY"] = "your-api-key"
 
 # ------------------------------------------------------------------------------------------------------
 # VECTORSTORE CREATION
 # ------------------------------------------------------------------------------------------------------
-
 
 # Function for generating code summaries
 def generate_summary(code, model_name):
@@ -59,8 +60,7 @@ def extract_code_metadata(code):
         return [], []
 
 
-# Function to recursively get all code files with specified extension in a
-# folder
+# Function to recursively get all code files with specified extension in a folder
 def get_code_files(data_path, extensions):
     code_files = []
     for root, _, files in os.walk(data_path):
@@ -98,7 +98,7 @@ def process_file(file_path, data_path, llm_summary, llm):
         else:
             return Document(page_content=content, metadata=metadata)
     except Exception as e:
-        print(f"Error processing file {file_path}: {e}")
+        print(f"{Fore.RED}[ERROR]{Style.RESET_ALL} Processing {Path(file_path).name}: {str(e)}")
         return None
 
 
@@ -116,9 +116,10 @@ def load_files_as_documents(data_path, extensions, llm, llm_summary=False):
         for future in tqdm(
                 as_completed(future_to_file),
                 total=len(code_files),
-                desc="Processing files"):
+                desc=f"{Fore.BLUE}Processing files{Style.RESET_ALL}",
+                bar_format="{l_bar}%s{bar}%s{r_bar}" % (Fore.BLUE, Fore.RESET)):
             doc = future.result()
-            if doc:  # Ignore failed cases
+            if doc:
                 docs.append(doc)
 
     return docs
@@ -135,12 +136,12 @@ def create_vector_store(
     llm_summary,
     llm,
 ):
-    # Load all the docs
-    print("Loading files... (this may take a while)")
+    print(f"\n{Fore.CYAN}{Style.BRIGHT}=== Creating Vector Store ==={Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}Loading files...{Style.RESET_ALL} (this may take a while)")
     docs = load_files_as_documents(data_path, extensions, llm, llm_summary)
 
     if not docs:
-        print("No documents found. Exiting.")
+        print(f"{Fore.RED}No documents found. Exiting.{Style.RESET_ALL}")
         return
 
     # Split code into chunks
@@ -150,16 +151,17 @@ def create_vector_store(
         add_start_index=True)
     split_docs = text_splitter.split_documents(docs)
 
-    print(f"Number of chunks created: {len(split_docs)}")
+    print(f"{Fore.GREEN}Number of chunks created:{Style.RESET_ALL} {len(split_docs)}")
 
     if not split_docs:
-        print("No chunks created. Exiting.")
+        print(f"{Fore.RED}No chunks created. Exiting.{Style.RESET_ALL}")
         return
 
     # Get embeddings function based on model type
     embeddings = get_embeddings_function(embedding_model)
 
     # Create the Chroma vector store
+    print(f"{Fore.YELLOW}Creating vector store...{Style.RESET_ALL}")
     db = Chroma.from_documents(
         split_docs,
         embeddings,
@@ -167,7 +169,8 @@ def create_vector_store(
         collection_metadata={"hnsw:space": "cosine"},
     )
 
-    print(f"Vector store created at {persistent_directory}")
+    print(f"{Fore.GREEN}Vector store successfully created at:{Style.RESET_ALL}")
+    print(f"{Fore.WHITE}{persistent_directory}{Style.RESET_ALL}")
 
 
 # ------------------------------------------------------------------------------------------------------

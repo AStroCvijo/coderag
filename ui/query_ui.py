@@ -10,7 +10,6 @@ from utils.repo import parse_file_path
 
 console = Console()
 
-
 # Function for displaying the banner
 def print_banner(name, repo):
     console.print(
@@ -20,13 +19,11 @@ def print_banner(name, repo):
         )
     )
 
-
 # Function for clearing the screen
 def clear_screen(persistent_directory):
     os.system("cls" if os.name == "nt" else "clear")
     name, repo, _, _ = parse_file_path(persistent_directory)
     print_banner(name, repo)
-
 
 # Function to start the query UI
 def start_query_ui(persistent_directory, args):
