@@ -8,7 +8,7 @@ from langchain import hub
 from langchain.schema import Document
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
-from utils.model_handlers import get_llm
+from handlers.model_handlers import get_llm
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 

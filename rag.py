@@ -8,8 +8,8 @@ from langchain_chroma import Chroma
 from langchain.schema import Document
 from langgraph.graph import END, StateGraph
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from utils.model_handlers import get_llm, get_embeddings_function
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from handlers.model_handlers import get_llm, get_embeddings_function
 
 # Initialize colorama
 init(autoreset=True)
