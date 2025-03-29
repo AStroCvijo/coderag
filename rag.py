@@ -99,7 +99,7 @@ def process_file(file_path, data_path, llm_summary, llm):
         absolute_path = str(Path(file_path).resolve())
         file_extension = Path(file_path).suffix.lower()
         functions, classes = extract_code_metadata(content)
-        purpose = generate_purpose(llm, relative_path, file_extension, functions, classes)
+        # purpose = generate_purpose(llm, relative_path, file_extension, functions, classes)
 
         metadata = {
             "source": relative_path,
@@ -107,7 +107,7 @@ def process_file(file_path, data_path, llm_summary, llm):
             "extension": file_extension,
             "classes": ", ".join(classes) if classes else "None",
             "functions": ", ".join(functions) if functions else "None",
-            "purpose": purpose
+            # "purpose": purpose
         }
 
         if llm_summary:
