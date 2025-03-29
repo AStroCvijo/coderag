@@ -17,6 +17,7 @@ def arg_parse():
             "text-embedding-3-large",
             "text-embedding-3-small",
             "text-embedding-ada-002",
+            "sentence-transformers/all-mpnet-base-v2",
         ],
         default="text-embedding-3-large",
     )
@@ -34,7 +35,7 @@ def arg_parse():
         "-m",
         "--llm",
         type=str,
-        choices=["gpt-4", "gpt-3.5-turbo", "gpt-4o-mini"],
+        choices=["gpt-4", "gpt-3.5-turbo", "gpt-4o-mini", "EleutherAI/pythia-160m",],
         default="gpt-4o-mini",
     )
     parser.add_argument(

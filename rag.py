@@ -20,6 +20,25 @@ os.environ["LANGCHAIN_API_KEY"] = "your-api-key"
 # VECTORSTORE CREATION
 # ------------------------------------------------------------------------------------------------------
 
+def generate_purpose(model_name, relative_path, file_extension, functions, classes):
+    # Initialize LLM
+    llm = get_llm(model_name, max_tokens=30)
+
+    # Initialize prompt template
+    prompt = f"""
+    Based on the information provided:
+    - File path: '{relative_path}'
+    - File extension: '{file_extension}'
+    - Key classes: {', '.join(classes) if classes else 'None provided'}
+    - Key functions: {', '.join(functions) if functions else 'None provided'}
+
+    Generate a concise 1-2 sentence summary describing the overall purpose of this file, referencing the file path, functions, and classes as context. Be specific, technically precise, and keep the explanation focused on the core functionality.
+    """
+
+    # Return generated purpose
+    purpose = llm.invoke(prompt)
+    return purpose.content.strip()
+
 # Function for generating code summaries
 def generate_summary(code, model_name):
     # Initialize LLM
@@ -80,6 +99,7 @@ def process_file(file_path, data_path, llm_summary, llm):
         absolute_path = str(Path(file_path).resolve())
         file_extension = Path(file_path).suffix.lower()
         functions, classes = extract_code_metadata(content)
+        purpose = generate_purpose(llm, relative_path, file_extension, functions, classes)
 
         metadata = {
             "source": relative_path,
@@ -87,6 +107,7 @@ def process_file(file_path, data_path, llm_summary, llm):
             "extension": file_extension,
             "classes": ", ".join(classes) if classes else "None",
             "functions": ", ".join(functions) if functions else "None",
+            "purpose": purpose
         }
 
         if llm_summary:
