@@ -1,6 +1,6 @@
 import json
-from rag import query_vector_store
 from colorama import init, Fore, Style
+from rag.query import query_vector_store
 
 # Initialize colorama
 init(autoreset=True)

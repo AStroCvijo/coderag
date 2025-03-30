@@ -3,7 +3,7 @@ import warnings
 from eval.eval import eval
 from ui.main_ui import start_ui
 from utils.const import extensions
-from rag import create_vector_store
+from rag.rag import create_vector_store
 from utils.argparser import arg_parse
 from utils.repo import extract_repo_name, clone_repo
 

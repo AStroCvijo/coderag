@@ -5,7 +5,7 @@ def arg_parse():
     parser = argparse.ArgumentParser()
 
     # RAG arguments
-    parser.add_argument("-k", "--top_k", type=int, default=1000)
+    parser.add_argument("-k", "--top_k", type=int, default=50)
     parser.add_argument("-cs", "--chunk_size", type=int, default=1200)
     parser.add_argument("-co", "--chunk_overlap", type=int, default=200)
     parser.add_argument("-ls", "--llm_summary", type=bool, default=True)
@@ -13,12 +13,12 @@ def arg_parse():
         "-em",
         "--embedding_model",
         type=str,
-        choices=[
-            "text-embedding-3-large",
-            "text-embedding-3-small",
-            "text-embedding-ada-002",
-            "sentence-transformers/all-mpnet-base-v2",
-        ],
+        # choices=[
+        #     "text-embedding-3-large",
+        #     "text-embedding-3-small",
+        #     "text-embedding-ada-002",
+        #     "sentence-transformers/all-mpnet-base-v2",
+        # ],
         default="text-embedding-3-large",
     )
 
@@ -35,7 +35,7 @@ def arg_parse():
         "-m",
         "--llm",
         type=str,
-        choices=["gpt-4", "gpt-3.5-turbo", "gpt-4o-mini", "EleutherAI/pythia-160m",],
+        # choices=["gpt-4", "gpt-3.5-turbo", "gpt-4o-mini", "EleutherAI/pythia-160m",],
         default="gpt-4o-mini",
     )
     parser.add_argument(

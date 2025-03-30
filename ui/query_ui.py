@@ -4,9 +4,9 @@ from rich.text import Text
 from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.console import Console
-from rag import query_vector_store
-from rag import query_vector_store_with_llm
 from utils.repo import parse_file_path
+from rag.query import query_vector_store
+from rag.query import query_vector_store_with_llm
 
 console = Console()
 

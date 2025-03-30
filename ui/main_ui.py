@@ -7,7 +7,7 @@ from rich.console import Console
 from collections import defaultdict
 from utils.repo import *
 from utils.const import *
-from rag import create_vector_store
+from rag.rag import create_vector_store
 from ui.query_ui import start_query_ui
 
 console = Console()
@@ -105,28 +105,33 @@ def start_ui(args):
 
                 # Keep prompting until a valid embedding model is entered
                 while True:
-                    available_models = OPENAI_MODELS
-                    console.print(
-                        "[bold blue]Available embedding models:[/bold blue]")
+                    available_models = OPENAI_MODELS + ["Custom Hugging Face Model"]
+                    console.print("[bold blue]Available embedding models:[/bold blue]")
                     for i, model in enumerate(available_models, 1):
                         console.print(f"{i}. {model}")
-                    model_choice = get_input_with_cancel(
-                        "[bold blue]Select an embedding model by number:[/bold blue]"
-                    )
+                    
+                    model_choice = get_input_with_cancel("[bold blue]Select an embedding model by number (or enter a Hugging Face model name):[/bold blue] ")
+                    
                     if model_choice is None:
-                        console.print(
-                            "[bold yellow]Indexing canceled by user.[/bold yellow]"
-                        )
+                        console.print("[bold yellow]Indexing canceled by user.[/bold yellow]")
                         return
-                    if model_choice.isdigit() and 1 <= int(model_choice) <= len(
-                        available_models
-                    ):
-                        embedding_model = available_models[int(
-                            model_choice) - 1]
+                    
+                    if model_choice.isdigit() and 1 <= int(model_choice) <= len(available_models):
+                        selected_model = available_models[int(model_choice) - 1]
+                        if selected_model == "Custom Hugging Face Model":
+                            huggingface_model = get_input_with_cancel("[bold blue]Enter the Hugging Face model name:[/bold blue] ")
+                            if huggingface_model:
+                                embedding_model = huggingface_model
+                                break
+                        else:
+                            embedding_model = selected_model
+                            break
+                    
+                    elif model_choice:  # Assume user entered a Hugging Face model name directly
+                        embedding_model = model_choice.strip()
                         break
-                    console.print(
-                        "[bold red]Error: Please enter a valid number corresponding to an embedding model.[/bold red]"
-                    )
+                    
+                    console.print("[bold red]Error: Please enter a valid number or a Hugging Face model name.[/bold red]")
 
                 # Keep prompting until a valid LLM summary option is entered
                 while True:
