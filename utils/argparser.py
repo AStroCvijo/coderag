@@ -5,7 +5,7 @@ def arg_parse():
     parser = argparse.ArgumentParser()
 
     # RAG arguments
-    parser.add_argument("-k", "--top_k", type=int, default=40)
+    parser.add_argument("-k", "--top_k", type=int, default=1000)
     parser.add_argument("-cs", "--chunk_size", type=int, default=1200)
     parser.add_argument("-co", "--chunk_overlap", type=int, default=200)
     parser.add_argument("-ls", "--llm_summary", type=bool, default=True)

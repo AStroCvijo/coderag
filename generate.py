@@ -184,6 +184,16 @@ def retrieve(state, retriever):
     question = state["question"]
     documents = retriever.invoke(question)
 
+    # Ensure unique documents before sorting
+    documents = {doc.metadata.get("source"): doc for doc in documents}.values()
+
+    # Sort by relevance score in descending order
+    documents = sorted(
+        documents, key=lambda x: x.metadata.get("score", 0.0), reverse=True
+    )
+
+    documents = documents[:10]
+
     # Replace the document's content with the actual content from the source
     # file
     for doc in documents:

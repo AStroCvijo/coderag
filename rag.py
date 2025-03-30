@@ -20,44 +20,28 @@ os.environ["LANGCHAIN_API_KEY"] = "your-api-key"
 # VECTORSTORE CREATION
 # ------------------------------------------------------------------------------------------------------
 
-def generate_purpose(model_name, relative_path, file_extension, functions, classes):
-    # Initialize LLM
-    llm = get_llm(model_name, max_tokens=30)
-
-    # Initialize prompt template
-    prompt = f"""
-    Based on the information provided:
-    - File path: '{relative_path}'
-    - File extension: '{file_extension}'
-    - Key classes: {', '.join(classes) if classes else 'None provided'}
-    - Key functions: {', '.join(functions) if functions else 'None provided'}
-
-    Generate a concise 1-2 sentence summary describing the overall purpose of this file, referencing the file path, functions, and classes as context. Be specific, technically precise, and keep the explanation focused on the core functionality.
-    """
-
-    # Return generated purpose
-    purpose = llm.invoke(prompt)
-    return purpose.content.strip()
-
 # Function for generating code summaries
-def generate_summary(code, model_name):
+def generate_summary(code, relative_path, model_name):
     # Initialize LLM
     llm = get_llm(model_name)
 
     # Initialize prompt template
     prompt = f"""
-    Analyze the following code and create a structured summary containing:
+    Analyze the following code and file path and create a structured summary containing:
     1. Key functionality and purpose (1-2 sentences)
     2. Main classes/functions with brief descriptions
     3. Important dependencies/imports
     4. Notable algorithms/patterns
     5. Key input/output relationships
+    6. The general purpose of the file
 
     Format using bullet points with minimal markdown. Be concise but technically precise.
 
     Code:
     {code}
 
+    Path:
+    {relative_path}
     Summary:
     """
 
@@ -111,7 +95,7 @@ def process_file(file_path, data_path, llm_summary, llm):
         }
 
         if llm_summary:
-            summary = generate_summary(content, llm)
+            summary = generate_summary(content, relative_path, llm)
             return Document(
                 page_content=f"SUMMARY: {summary}\n\nCODE SNIPPET: {content}...",
                 metadata=metadata,
@@ -253,7 +237,7 @@ def query_vector_store_with_llm(
     retriever = db.as_retriever(
         search_type="similarity",
         search_kwargs={
-            "k": 10})
+            "k": 100})
 
     (
         retrieval_grader,

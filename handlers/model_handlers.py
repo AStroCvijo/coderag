@@ -5,7 +5,7 @@ from langchain_openai import OpenAIEmbeddings
 from transformers import AutoModel, AutoTokenizer
 from langchain_huggingface import HuggingFaceEmbeddings
 
-def get_llm(model_name, max_tokens=400):
+def get_llm(model_name, max_tokens=1200):
     if model_name in LLMS:
         return ChatOpenAI(model=model_name, temperature=0.0, max_tokens=max_tokens)
     else:
