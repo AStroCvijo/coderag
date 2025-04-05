@@ -150,3 +150,4 @@ yarl==1.18.3
 zipp==3.21.0
 zstandard==0.23.0
 colorama==0.4.6
+langchain-huggingface==0.1.2
