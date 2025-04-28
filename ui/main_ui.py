@@ -206,6 +206,12 @@ def start_ui(args):
         elif user_input.lower() == "list":
             repo_dict = defaultdict(list)
 
+            if not os.path.isdir("data"):
+                console.print(
+                    "[bold red]Error: No repositories have been downloaded.[/bold red]"
+                )
+                continue
+
             # Group repositories by username
             for folder in os.listdir("data"):
                 user_path = os.path.join("data", folder)

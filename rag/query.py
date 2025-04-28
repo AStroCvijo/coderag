@@ -97,7 +97,7 @@ def query_vector_store_with_llm(
             question_rewriter))
     workflow.add_node(
         "out_of_scope_response",
-        lambda state: retrieve(
+        lambda state: out_of_scope_response(
             state,
             llm))
 
