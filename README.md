@@ -54,7 +54,7 @@ chmod +x eval.sh
 
 For detailed experiments and evaluations of this RAG system, please refer to the following document:
 
-[Experiments and Evaluations](https://astrocvijo.github.io/llm_listwise_reranker_for_coderag/docs/experiments.pdf)
+[Experiments and Evaluations](https://astrocvijo.github.io/coderag/docs/experiments.pdf)
 
 This document provides comprehensive insights into the performance, benchmarks, and various configurations tested during the development of CodeRAG. It includes comparisons of different embedding models, chunk sizes, and other parameters to help you understand the system's capabilities and optimize it for your specific use case.
 
