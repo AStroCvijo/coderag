@@ -15,8 +15,8 @@ Developed as part of an application for a JetBrains internship.
 Clone the repository and install dependencies:
 
 ```bash
-git clone https://github.com/AStroCvijo/llm_listwise_reranker_for_coderag.git
-cd llm_listwise_reranker_for_coderag
+git clone https://github.com/AStroCvijo/coderag.git
+cd coderag
 conda create -n rag python=3.9
 conda activate rag
 pip install -r requirements.txt --index-url https://download.pytorch.org/whl/cu124 --extra-index-url https://pypi.org/simple --extra-index-url https://pypi.ngc.nvidia.com
