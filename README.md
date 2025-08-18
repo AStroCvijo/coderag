@@ -1,5 +1,5 @@
 
-# **LLM Listwise Reranker for CodeRAG**
+# **CodeRAG**
 
 Retrieval-Augmented Generation (RAG) system over a code repository for a question-answering task
 
@@ -56,7 +56,7 @@ For detailed experiments and evaluations of this RAG system, please refer to the
 
 [Experiments and Evaluations](https://astrocvijo.github.io/llm_listwise_reranker_for_coderag/docs/experiments.pdf)
 
-This document provides comprehensive insights into the performance, benchmarks, and various configurations tested during the development of the LLM Listwise Reranker for CodeRAG. It includes comparisons of different embedding models, chunk sizes, and other parameters to help you understand the system's capabilities and optimize it for your specific use case.
+This document provides comprehensive insights into the performance, benchmarks, and various configurations tested during the development of CodeRAG. It includes comparisons of different embedding models, chunk sizes, and other parameters to help you understand the system's capabilities and optimize it for your specific use case.
 
 ## 🧩**Seamless Integration with Multiple LLM and Embedding Providers (Local/API/Custom)**
 
