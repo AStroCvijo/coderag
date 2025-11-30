@@ -3,8 +3,6 @@
 
 Retrieval-Augmented Generation (RAG) system over a code repository for a question-answering task
 
-Developed as part of an application for a JetBrains internship.
-
 ## ⚡**Quickstart**
 
 ### **Prerequisites**
